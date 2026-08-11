@@ -7,7 +7,7 @@ MASTER="$ROOT_DIR/.build/AppIcon-1024.png"
 OUTPUT="$ROOT_DIR/.build/AppIcon.icns"
 
 mkdir -p "$ICON_DIR"
-xcrun swift "$ROOT_DIR/script/generate_icon.swift" "$MASTER"
+cp "$ROOT_DIR/Docs/Assets/app-icon.png" "$MASTER"
 
 make_icon() {
   local size="$1"
