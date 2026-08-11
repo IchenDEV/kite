@@ -1,0 +1,7 @@
+.build/
+.swiftpm/
+dist/
+Resources/Engine/aria2-next
+Resources/Engine/*.tmp
+*.xcuserstate
+.DS_Store
