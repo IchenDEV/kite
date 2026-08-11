@@ -2,12 +2,12 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="SuperDD"
-BUNDLE_ID="com.chenli.superdd"
+APP_NAME="Kite"
+BUNDLE_ID="com.chenli.kite"
 MIN_SYSTEM_VERSION="26.0"
-APP_VERSION="${SUPERDD_VERSION:-0.2.0}"
-BUILD_CONFIGURATION="${SUPERDD_BUILD_CONFIGURATION:-debug}"
-CODESIGN_IDENTITY="${SUPERDD_CODESIGN_IDENTITY:--}"
+APP_VERSION="${KITE_VERSION:-${SUPERDD_VERSION:-0.2.0}}"
+BUILD_CONFIGURATION="${KITE_BUILD_CONFIGURATION:-${SUPERDD_BUILD_CONFIGURATION:-debug}}"
+CODESIGN_IDENTITY="${KITE_CODESIGN_IDENTITY:-${SUPERDD_CODESIGN_IDENTITY:--}}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
@@ -21,7 +21,9 @@ APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+pkill -x "SuperDD" >/dev/null 2>&1 || true
 pkill -f "$APP_BUNDLE/Contents/Resources/Engine/aria2-next" >/dev/null 2>&1 || true
+pkill -f "$DIST_DIR/SuperDD.app/Contents/Resources/Engine/aria2-next" >/dev/null 2>&1 || true
 
 "$ROOT_DIR/script/fetch_engine.sh"
 "$ROOT_DIR/script/generate_icon.sh"
@@ -31,16 +33,17 @@ BUILD_DIR="$(swift build --package-path "$ROOT_DIR" --configuration "$BUILD_CONF
 BUILD_BINARY="$BUILD_DIR/$APP_NAME"
 
 rm -rf "$APP_BUNDLE"
+rm -rf "$DIST_DIR/SuperDD.app"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES/Engine" "$APP_RESOURCES/Legal" "$APP_HELPERS" "$APP_CLI" "$APP_RESOURCES/BrowserExtensions"
 cp "$BUILD_BINARY" "$APP_BINARY"
-cp "$BUILD_DIR/superdd-plugin-host" "$APP_HELPERS/superdd-plugin-host"
-cp "$BUILD_DIR/superddctl" "$APP_CLI/superddctl"
+cp "$BUILD_DIR/kite-plugin-host" "$APP_HELPERS/kite-plugin-host"
+cp "$BUILD_DIR/kitectl" "$APP_CLI/kitectl"
 cp "$ROOT_DIR/Resources/Engine/aria2-next" "$APP_RESOURCES/Engine/aria2-next"
 cp "$ROOT_DIR/Legal/aria2-next-GPLv2.txt" "$APP_RESOURCES/Legal/aria2-next-GPLv2.txt"
 cp "$ROOT_DIR/.build/AppIcon.icns" "$APP_RESOURCES/AppIcon.icns"
 cp -R "$ROOT_DIR/Resources/zh-Hans.lproj" "$APP_RESOURCES/zh-Hans.lproj"
 cp "$ROOT_DIR"/dist/browser-extensions/*.zip "$APP_RESOURCES/BrowserExtensions/"
-chmod 755 "$APP_BINARY" "$APP_RESOURCES/Engine/aria2-next" "$APP_HELPERS/superdd-plugin-host" "$APP_CLI/superddctl"
+chmod 755 "$APP_BINARY" "$APP_RESOURCES/Engine/aria2-next" "$APP_HELPERS/kite-plugin-host" "$APP_CLI/kitectl"
 
 cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -52,9 +55,9 @@ cat >"$INFO_PLIST" <<PLIST
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleName</key>
-  <string>Super DD</string>
+  <string>Kite</string>
   <key>CFBundleDisplayName</key>
-  <string>Super DD</string>
+  <string>Kite</string>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleLocalizations</key>
@@ -77,9 +80,10 @@ cat >"$INFO_PLIST" <<PLIST
   <array>
     <dict>
       <key>CFBundleURLName</key>
-      <string>Super DD Download Links</string>
+      <string>Kite Download Links</string>
       <key>CFBundleURLSchemes</key>
       <array>
+        <string>kite</string>
         <string>superdd</string>
         <string>magnet</string>
         <string>ed2k</string>
@@ -105,15 +109,15 @@ cat >"$INFO_PLIST" <<PLIST
 PLIST
 
 if [[ "$CODESIGN_IDENTITY" != "-" ]]; then
-  codesign --force --options runtime --timestamp --entitlements "$ROOT_DIR/Resources/PluginHost.entitlements" --sign "$CODESIGN_IDENTITY" "$APP_HELPERS/superdd-plugin-host"
-  codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_CLI/superddctl"
+  codesign --force --options runtime --timestamp --entitlements "$ROOT_DIR/Resources/PluginHost.entitlements" --sign "$CODESIGN_IDENTITY" "$APP_HELPERS/kite-plugin-host"
+  codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_CLI/kitectl"
   codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_RESOURCES/Engine/aria2-next"
-  codesign --force --options runtime --timestamp --entitlements "$ROOT_DIR/Resources/SuperDD.entitlements" --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
+  codesign --force --options runtime --timestamp --entitlements "$ROOT_DIR/Resources/Kite.entitlements" --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
 else
-  codesign --force --entitlements "$ROOT_DIR/Resources/PluginHost.entitlements" --sign - "$APP_HELPERS/superdd-plugin-host"
-  codesign --force --sign - "$APP_CLI/superddctl"
+  codesign --force --entitlements "$ROOT_DIR/Resources/PluginHost.entitlements" --sign - "$APP_HELPERS/kite-plugin-host"
+  codesign --force --sign - "$APP_CLI/kitectl"
   codesign --force --sign - "$APP_RESOURCES/Engine/aria2-next"
-  codesign --force --entitlements "$ROOT_DIR/Resources/SuperDD.entitlements" --sign - "$APP_BUNDLE"
+  codesign --force --entitlements "$ROOT_DIR/Resources/Kite.entitlements" --sign - "$APP_BUNDLE"
 fi
 
 open_app() {

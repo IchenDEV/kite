@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUTPUT_DIR="$PROJECT_ROOT/dist/browser-extensions"
 STAGING_DIR="$PROJECT_ROOT/.build/browser-extensions"
 
-rm -rf "$STAGING_DIR"
+rm -rf "$STAGING_DIR" "$OUTPUT_DIR"
 mkdir -p "$STAGING_DIR/chromium" "$STAGING_DIR/firefox" "$OUTPUT_DIR"
 
 for browser in chromium firefox; do
@@ -17,11 +17,11 @@ done
 
 (
   cd "$STAGING_DIR/chromium"
-  /usr/bin/zip -q -r "$OUTPUT_DIR/super-dd-chromium.zip" .
+  /usr/bin/zip -q -r "$OUTPUT_DIR/kite-chromium.zip" .
 )
 (
   cd "$STAGING_DIR/firefox"
-  /usr/bin/zip -q -r "$OUTPUT_DIR/super-dd-firefox.zip" .
+  /usr/bin/zip -q -r "$OUTPUT_DIR/kite-firefox.zip" .
 )
 
 if xcrun --find safari-web-extension-converter >/dev/null 2>&1; then
@@ -29,16 +29,16 @@ if xcrun --find safari-web-extension-converter >/dev/null 2>&1; then
   xcrun safari-web-extension-converter \
     "$STAGING_DIR/chromium" \
     --project-location "$STAGING_DIR/Safari" \
-    --app-name "Super DD Safari" \
-    --bundle-identifier "com.chenli.superdd.safari" \
+    --app-name "Kite Safari" \
+    --bundle-identifier "com.chenli.kite.safari" \
     --swift --macos-only --copy-resources --no-open --no-prompt --force >/dev/null
-  SAFARI_PROJECT="$STAGING_DIR/Safari/Super DD Safari/Super DD Safari.xcodeproj/project.pbxproj"
+  SAFARI_PROJECT="$STAGING_DIR/Safari/Kite Safari/Kite Safari.xcodeproj/project.pbxproj"
   /usr/bin/sed -i '' \
-    's/com\.chenli\.superdd\.Super-DD-Safari/com.chenli.superdd.safari/g' \
+    's/com\.chenli\.kite\.Kite-Safari/com.chenli.kite.safari/g' \
     "$SAFARI_PROJECT"
   (
     cd "$STAGING_DIR/Safari"
-    /usr/bin/zip -q -r "$OUTPUT_DIR/super-dd-safari-project.zip" .
+    /usr/bin/zip -q -r "$OUTPUT_DIR/kite-safari-project.zip" .
   )
 fi
 

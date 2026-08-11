@@ -9,7 +9,7 @@ Audit baseline:
 
 `Implemented` means working code exists in this repository and is included in the build. `Scoped` documents an intentional boundary instead of implying broader compatibility. `External gate` requires credentials or third-party store review that cannot live in source control.
 
-| Surface | Status | Super DD implementation / boundary |
+| Surface | Status | Kite implementation / boundary |
 | --- | --- | --- |
 | HTTP/HTTPS/FTP | Implemented | aria2-next, segmentation, resume, headers, checksum, auth and proxy |
 | Magnet, torrent, ED2K, Thunder | Implemented | native importer/deep links, metadata, selected files and ED2K bootstrap |
@@ -39,10 +39,10 @@ Audit baseline:
 | Remote Web UI/API | Implemented | separate disabled-by-default listener, Bearer auth, rate limit and LAN opt-in |
 | MDXP 1.0 control plane | Implemented | initialize, ping, submit/cancel, task CRUD, stats, engine and URL methods |
 | Device pairing/relay | Scoped | shared-secret LAN control only; no cloud relay or account service |
-| Headless control | Implemented | `--headless` app mode and standalone `superddctl` MDXP client |
+| Headless control | Implemented | `--headless` app mode and standalone `kitectl` MDXP client |
 | Plugin sandbox | Implemented | separate JavaScriptCore helper, no host bridges, timeout and error isolation |
 | Plugin registry | Implemented | JSON catalog, SHA-256 required install, path validation and manifest ID check |
-| Motrix plugin binary compatibility | Scoped | Super DD resolver API is intentionally smaller; foreign plugin bundles are not claimed compatible |
+| Motrix plugin binary compatibility | Scoped | Kite resolver API is intentionally smaller; foreign plugin bundles are not claimed compatible |
 | Native update client | Implemented | GitHub release check, architecture selection and mandatory SHA-256 verification |
 | Signing/notarization workflow | Implemented | Developer ID, hardened runtime, notarization, staple, `spctl`, DMG and checksums |
 | Signed public release | External gate | requires the maintainer’s Developer ID/notary secrets and a version tag |

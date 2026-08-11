@@ -1,22 +1,22 @@
-# Super DD
+# Kite
 
 <p align="center">
-  <img src="Docs/Assets/app-icon.png" width="128" height="128" alt="Super DD app icon">
+  <img src="Docs/Assets/app-icon.png" width="128" height="128" alt="Kite app icon">
 </p>
 
 <p align="center">面向 macOS 26 及更新系统的原生多协议下载器。</p>
 
 <p align="center">
-  <a href="https://github.com/IchenDEV/super-dd/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/IchenDEV/super-dd/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/IchenDEV/super-dd"><img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-111111?logo=apple"></a>
+  <a href="https://github.com/IchenDEV/kite/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/IchenDEV/kite/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/IchenDEV/kite"><img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-111111?logo=apple"></a>
   <a href="https://www.swift.org"><img alt="Swift 6.2" src="https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/Swift_source-MIT-2F80ED"></a>
   <a href="THIRD_PARTY_NOTICES.md"><img alt="aria2-next GPLv2" src="https://img.shields.io/badge/aria2--next-GPLv2-5C6BC0"></a>
 </p>
 
-Super DD 以 Swift 6.2、SwiftUI、AppKit 和 Apple 系统框架实现桌面体验，通过只监听 loopback 的 JSON-RPC 2.0 驱动独立 `aria2-next` sidecar。仓库没有第三方 Swift Package、UI 框架、WebView、Electron 或跨平台运行时。
+Kite 以 Swift 6.2、SwiftUI、AppKit 和 Apple 系统框架实现桌面体验，通过只监听 loopback 的 JSON-RPC 2.0 驱动独立 `aria2-next` sidecar。仓库没有第三方 Swift Package、UI 框架、WebView、Electron 或跨平台运行时。
 
-![Super DD 的 macOS 原生仪表盘](Docs/Assets/super-dd-dashboard.jpg)
+![Kite 的 macOS 原生仪表盘](Docs/Assets/kite-dashboard.jpg)
 
 ## 主要能力
 
@@ -58,7 +58,7 @@ Super DD 以 Swift 6.2、SwiftUI、AppKit 和 Apple 系统框架实现桌面体�
 - Notification Center、Dock 角标、菜单栏速率、防止空闲睡眠和登录启动。
 - 默认关闭的远程 Web UI/API，可选择只监听本机或局域网，全部控制请求要求 Bearer Secret，并有速率限制与安全响应头。
 - MDXP 1.0：`motrix/initialize`、下载提交/取消、任务列表/控制、统计、引擎状态、URL probe/resolve。
-- `superddctl` 命令行客户端及 `--headless` 后台启动模式。
+- `kitectl` 命令行客户端及 `--headless` 后台启动模式。
 - JavaScriptCore resolver 插件运行在独立 helper 进程，无文件/网络桥接、五秒超时；Registry 安装要求 SHA-256。
 
 边界和逐项状态见[功能对等矩阵](Docs/FEATURE_PARITY.md)。DRM/加密 HLS、动态 DASH `SegmentTemplate`、密码归档和 Motrix 第三方插件二进制兼容不作虚假承诺。
@@ -68,12 +68,12 @@ Super DD 以 Swift 6.2、SwiftUI、AppKit 和 Apple 系统框架实现桌面体�
 要求 macOS 26+、Xcode 26+ 与 Swift 6.2。Apple Silicon 和 Intel Mac 都有锁定校验和的 `aria2-next` 引擎资产。
 
 ```bash
-git clone https://github.com/IchenDEV/super-dd.git
-cd super-dd
+git clone https://github.com/IchenDEV/kite.git
+cd kite
 ./script/build_and_run.sh
 ```
 
-脚本会校验并获取 `aria2-next 2.5.5`、构建全部 SwiftPM 产品、打包浏览器扩展、生成 `dist/SuperDD.app`、ad-hoc 签名并启动。
+脚本会校验并获取 `aria2-next 2.5.5`、构建全部 SwiftPM 产品、打包浏览器扩展、生成 `dist/Kite.app`、ad-hoc 签名并启动。
 
 | 命令 | 用途 |
 | --- | --- |
@@ -82,15 +82,15 @@ cd super-dd
 | `./script/build_and_run.sh --verify` | 启动并检查进程与签名 |
 | `./script/build_and_run.sh --package` | 只生成并验证 `.app` |
 | `./script/package_browser_extensions.sh` | 生成 Chromium、Firefox 和 Safari 包 |
-| `swift run superddctl --help` | 查看 MDXP CLI |
+| `swift run kitectl --help` | 查看 MDXP CLI |
 
 ### 浏览器扩展
 
 执行打包脚本后，产物位于 `dist/browser-extensions/`：
 
-- `super-dd-chromium.zip`：Chrome、Edge、Brave 等 Manifest V3 浏览器。
-- `super-dd-firefox.zip`：Firefox WebExtension。
-- `super-dd-safari-project.zip`：由 Apple converter 生成且可无签名编译的 Safari App Extension 工程。
+- `kite-chromium.zip`：Chrome、Edge、Brave 等 Manifest V3 浏览器。
+- `kite-firefox.zip`：Firefox WebExtension。
+- `kite-safari-project.zip`：由 Apple converter 生成且可无签名编译的 Safari App Extension 工程。
 
 在“设置 → Network”复制扩展 Secret；扩展默认连接 `http://127.0.0.1:29110`。实际端口冲突时以设置页显示值为准。
 
@@ -99,16 +99,16 @@ cd super-dd
 在“设置 → Network”启用 Remote Control，默认仍只监听 `127.0.0.1`。局域网监听是独立开关；公网使用必须放在可信 TLS 反向代理后面。
 
 ```bash
-export SUPERDD_REMOTE_URL=http://127.0.0.1:29120/
-export SUPERDD_REMOTE_SECRET='设置页显示的 Secret'
-swift run superddctl ping
-swift run superddctl add https://example.com/file.iso
-swift run superddctl list
+export KITE_REMOTE_URL=http://127.0.0.1:29120/
+export KITE_REMOTE_SECRET='设置页显示的 Secret'
+swift run kitectl ping
+swift run kitectl add https://example.com/file.iso
+swift run kitectl list
 ```
 
 ### Resolver 插件
 
-插件放在 `~/Library/Application Support/SuperDD/Plugins/<plugin-id>/`：
+插件放在 `~/Library/Application Support/Kite/Plugins/<plugin-id>/`：
 
 ```json
 {
@@ -132,15 +132,15 @@ DownloadStore + native isolated services
       └── helper process ───── JavaScriptCore resolver plugin
 ```
 
-应用数据位于 `~/Library/Application Support/SuperDD/`：设置、aria2 session、SQLite 历史、任务元数据、媒体断点、自动化去重记录、引擎资源和插件。更完整的信任边界见[架构说明](Docs/ARCHITECTURE.md)。
+应用数据位于 `~/Library/Application Support/Kite/`：设置、aria2 session、SQLite 历史、任务元数据、媒体断点、自动化去重记录、引擎资源和插件。首次启动会自动迁移旧版 `SuperDD` 数据目录和 Keychain 项，并继续接受旧环境变量与深链。更完整的信任边界见[架构说明](Docs/ARCHITECTURE.md)。
 
 ## 发布
 
 本地开发包使用 ad-hoc 签名。正式发布脚本支持 Developer ID、Hardened Runtime、Apple Notary Service、staple、Gatekeeper assessment、DMG 校验和 SHA-256：
 
 ```bash
-SUPERDD_CODESIGN_IDENTITY='Developer ID Application: …' \
-SUPERDD_NOTARY_PROFILE=superdd-notary \
+KITE_CODESIGN_IDENTITY='Developer ID Application: …' \
+KITE_NOTARY_PROFILE=kite-notary \
 ./script/release.sh 0.2.0
 ```
 
@@ -148,6 +148,6 @@ SUPERDD_NOTARY_PROFILE=superdd-notary \
 
 ## 许可
 
-Super DD 的 Swift、JavaScript 和脚本源码使用 [MIT License](LICENSE)。`aria2-next` 是独立 sidecar，按 GPLv2 及其上游 OpenSSL linking exception 分发；版本、校验和和完整许可证见[第三方声明](THIRD_PARTY_NOTICES.md)。
+Kite 的 Swift、JavaScript 和脚本源码使用 [MIT License](LICENSE)。`aria2-next` 是独立 sidecar，按 GPLv2 及其上游 OpenSSL linking exception 分发；版本、校验和和完整许可证见[第三方声明](THIRD_PARTY_NOTICES.md)。
 
 产品方向与传输能力参考 [Motrix Next](https://github.com/AnInsomniacy/motrix-next)、[Motrix](https://github.com/agalwood/Motrix) 与 [aria2-next](https://github.com/AnInsomniacy/aria2-next)。

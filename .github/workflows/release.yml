@@ -29,11 +29,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: xcrun notarytool store-credentials superdd-ci --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+        run: xcrun notarytool store-credentials kite-ci --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
       - name: Build, sign, notarize and verify
         env:
-          SUPERDD_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
-          SUPERDD_NOTARY_PROFILE: superdd-ci
+          KITE_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          KITE_NOTARY_PROFILE: kite-ci
         run: ./script/release.sh "${GITHUB_REF_NAME#v}"
       - name: Publish GitHub release
         env:

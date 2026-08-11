@@ -3,14 +3,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "SuperDD",
+    name: "Kite",
     platforms: [
         .macOS(.v26),
     ],
     products: [
-        .executable(name: "SuperDD", targets: ["SuperDD"]),
-        .executable(name: "superddctl", targets: ["SuperDDCLI"]),
-        .executable(name: "superdd-plugin-host", targets: ["SuperDDPluginHost"]),
+        .executable(name: "Kite", targets: ["Kite"]),
+        .executable(name: "kitectl", targets: ["KiteCLI"]),
+        .executable(name: "kite-plugin-host", targets: ["KitePluginHost"]),
     ],
     targets: [
         .systemLibrary(
@@ -19,9 +19,9 @@ let package = Package(
             providers: [.brew(["sqlite3"])]
         ),
         .executableTarget(
-            name: "SuperDD",
+            name: "Kite",
             dependencies: ["CSQLite"],
-            path: "Sources/SuperDD",
+            path: "Sources/Kite",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ],
@@ -38,19 +38,19 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "SuperDDPluginHost",
-            path: "Sources/SuperDDPluginHost",
+            name: "KitePluginHost",
+            path: "Sources/KitePluginHost",
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
             linkerSettings: [.linkedFramework("JavaScriptCore")]
         ),
         .testTarget(
-            name: "SuperDDTests",
-            dependencies: ["SuperDD"],
-            path: "Tests/SuperDDTests"
+            name: "KiteTests",
+            dependencies: ["Kite"],
+            path: "Tests/KiteTests"
         ),
         .executableTarget(
-            name: "SuperDDCLI",
-            path: "Sources/SuperDDCLI",
+            name: "KiteCLI",
+            path: "Sources/KiteCLI",
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
     ]

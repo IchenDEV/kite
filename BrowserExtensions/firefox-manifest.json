@@ -1,18 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Super DD Download Manager",
+  "name": "Kite Download Manager",
   "version": "0.2.0",
-  "description": "Send downloads, pages, selections, and links to Super DD.",
+  "description": "Send downloads, pages, selections, and links to Kite.",
   "icons": { "128": "icons/icon-128.png" },
   "permissions": ["contextMenus", "cookies", "downloads", "storage", "tabs", "<all_urls>"],
   "host_permissions": ["<all_urls>", "http://127.0.0.1/*"],
   "background": { "scripts": ["background.js"] },
-  "action": { "default_title": "Download with Super DD" },
+  "action": { "default_title": "Download with Kite" },
   "options_ui": { "page": "options.html", "open_in_tab": true },
   "content_scripts": [
     { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
   ],
   "browser_specific_settings": {
-    "gecko": { "id": "superdd@ichendev", "strict_min_version": "128.0" }
+    "gecko": { "id": "kite@ichendev", "strict_min_version": "128.0" }
   }
 }

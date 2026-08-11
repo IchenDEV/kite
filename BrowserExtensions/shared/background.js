@@ -49,17 +49,17 @@ async function submit(url, context = {}) {
       filename: context.filename || "",
     }),
   });
-  if (!response.ok) throw new Error(`Super DD returned HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`Kite returned HTTP ${response.status}`);
   return response.json();
 }
 
 async function createMenus() {
   await invoke(ext.contextMenus, "removeAll");
   const entries = [
-    ["superdd-link", "Download Link with Super DD", ["link"]],
-    ["superdd-page", "Download Page with Super DD", ["page", "video", "audio"]],
-    ["superdd-selection", "Download URLs in Selection", ["selection"]],
-    ["superdd-all", "Download All Links with Super DD", ["page"]],
+    ["kite-link", "Download Link with Kite", ["link"]],
+    ["kite-page", "Download Page with Kite", ["page", "video", "audio"]],
+    ["kite-selection", "Download URLs in Selection", ["selection"]],
+    ["kite-all", "Download All Links with Kite", ["page"]],
   ];
   for (const [id, title, contexts] of entries) {
     ext.contextMenus.create({ id, title, contexts });
@@ -79,14 +79,14 @@ ext.action.onClicked.addListener((tab) => {
 
 ext.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
-    if (info.menuItemId === "superdd-link") await submit(info.linkUrl, { referer: tab?.url });
-    if (info.menuItemId === "superdd-page") await submit(info.srcUrl || info.pageUrl, { referer: info.pageUrl });
-    if (info.menuItemId === "superdd-selection") {
+    if (info.menuItemId === "kite-link") await submit(info.linkUrl, { referer: tab?.url });
+    if (info.menuItemId === "kite-page") await submit(info.srcUrl || info.pageUrl, { referer: info.pageUrl });
+    if (info.menuItemId === "kite-selection") {
       const matches = String(info.selectionText || "").match(/(?:https?|ftp):\/\/[^\s<>"']+/g) || [];
       for (const url of [...new Set(matches)]) await submit(url, { referer: tab?.url });
     }
-    if (info.menuItemId === "superdd-all" && tab?.id != null) {
-      const result = await invoke(ext.tabs, "sendMessage", tab.id, { type: "superdd.collectLinks" });
+    if (info.menuItemId === "kite-all" && tab?.id != null) {
+      const result = await invoke(ext.tabs, "sendMessage", tab.id, { type: "kite.collectLinks" });
       for (const url of result?.urls || []) await submit(url, { referer: tab.url });
     }
   } catch (error) {

@@ -2,14 +2,14 @@
 
 ## Process boundary
 
-Super DD is a native macOS app. It does not link aria2 into the Swift process: a pinned `aria2-next` executable runs as a sidecar and accepts authenticated JSON-RPC only on loopback. Media-manifest transfers and automation use isolated Swift actors. Resolver plugins run in a separate JavaScriptCore helper process so a stalled script can be terminated without taking down the app.
+Kite is a native macOS app. It does not link aria2 into the Swift process: a pinned `aria2-next` executable runs as a sidecar and accepts authenticated JSON-RPC only on loopback. Media-manifest transfers and automation use isolated Swift actors. Resolver plugins run in a separate JavaScriptCore helper process so a stalled script can be terminated without taking down the app.
 
 ```text
-SuperDD.app
-├── Contents/MacOS/SuperDD
+Kite.app
+├── Contents/MacOS/Kite
 ├── Contents/Resources/Engine/aria2-next
-├── Contents/Resources/Helpers/superdd-plugin-host
-├── Contents/Resources/CLI/superddctl
+├── Contents/Resources/Helpers/kite-plugin-host
+├── Contents/Resources/CLI/kitectl
 └── Contents/Resources/BrowserExtensions/*.zip
 ```
 

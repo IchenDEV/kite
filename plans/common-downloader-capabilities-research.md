@@ -1,7 +1,7 @@
 # Common desktop download-manager capabilities
 
 Research date: 2026-08-11
-Scope: current, user-facing desktop capabilities documented by the products themselves. Sources are limited to official product sites, official help centers, and official repositories/wikis. A blank or unmentioned capability below means “not established by the reviewed source,” not “the product definitely lacks it.” This is a market-capability benchmark, not an audit of Super DD’s current implementation.
+Scope: current, user-facing desktop capabilities documented by the products themselves. Sources are limited to official product sites, official help centers, and official repositories/wikis. A blank or unmentioned capability below means “not established by the reviewed source,” not “the product definitely lacks it.” This is a market-capability benchmark, not an audit of Kite’s current implementation.
 
 ## Executive conclusion
 
