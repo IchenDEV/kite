@@ -19,7 +19,7 @@ struct TaskListView: View {
             } else {
                 List(selection: $store.selectedTaskIDs) {
                     ForEach(store.visibleTasks) { task in
-                        TaskRowView(task: task)
+                        TaskRowView(task: task, label: store.label(for: task))
                             .tag(task.gid)
                             .contextMenu { contextMenu(for: task) }
                     }
@@ -40,6 +40,13 @@ struct TaskListView: View {
 
     @ViewBuilder
     private func contextMenu(for task: DownloadTask) -> some View {
+        if task.status == .error {
+            Button("Retry") {
+                store.selectedTaskIDs = [task.gid]
+                Task { await store.retrySelection() }
+            }
+        }
+
         if task.status == .paused {
             Button("Resume") {
                 store.selectedTaskIDs = [task.gid]
@@ -60,11 +67,39 @@ struct TaskListView: View {
         Button("Copy Source URL") { store.copySourceURL(task) }
             .disabled(task.files.first?.uris.first == nil)
 
+        if task.status == .waiting || task.status == .paused {
+            Menu("Queue Position") {
+                Button("Move to Top") {
+                    store.selectedTaskIDs = [task.gid]
+                    Task { await store.moveSelection(.top) }
+                }
+                Button("Move Up") {
+                    store.selectedTaskIDs = [task.gid]
+                    Task { await store.moveSelection(.up) }
+                }
+                Button("Move Down") {
+                    store.selectedTaskIDs = [task.gid]
+                    Task { await store.moveSelection(.down) }
+                }
+                Button("Move to Bottom") {
+                    store.selectedTaskIDs = [task.gid]
+                    Task { await store.moveSelection(.bottom) }
+                }
+            }
+            Menu("Priority") {
+                ForEach(TaskPriority.allCases) { priority in
+                    Button(priority.title) { Task { await store.setPriority(priority, task: task) } }
+                }
+            }
+        }
+
         Divider()
 
         Button("Remove", role: .destructive) {
-            store.selectedTaskIDs = [task.gid]
-            Task { await store.removeSelection() }
+            Task { await store.confirmRemoval(of: task, deleteFiles: false) }
+        }
+        Button("Remove and Move Files to Trash…", role: .destructive) {
+            Task { await store.confirmRemoval(of: task, deleteFiles: true) }
         }
     }
 
@@ -95,6 +130,7 @@ struct TaskListView: View {
 
 private struct TaskRowView: View {
     let task: DownloadTask
+    let label: String
 
     var body: some View {
         HStack(spacing: 12) {
@@ -109,6 +145,14 @@ private struct TaskRowView: View {
                     Text(task.name)
                         .font(.body.weight(.medium))
                         .lineLimit(1)
+                    if !label.isEmpty {
+                        Text(label)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.quaternary, in: .capsule)
+                    }
                     Spacer(minLength: 12)
                     Text(task.status.title)
                         .font(.caption)

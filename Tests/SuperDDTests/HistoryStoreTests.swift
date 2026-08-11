@@ -27,11 +27,27 @@ struct HistoryStoreTests {
             ]),
         ])
 
-        try await store.upsert(task: task, at: Date(timeIntervalSince1970: 100))
+        let metadata = TaskMetadata(
+            gid: task.gid,
+            sourceURLs: ["https://example.com/file.bin"],
+            sourceFilePath: nil,
+            options: ["dir": .string("/tmp")],
+            credentialProfileID: nil,
+            label: "Release",
+            priority: .normal,
+            scheduled: false,
+            retryCount: 0,
+            nextRetryAt: nil,
+            createdAt: .now
+        )
+        try await store.upsert(task: task, metadata: metadata, at: Date(timeIntervalSince1970: 100))
         let records = try await store.records()
         #expect(records.count == 1)
         #expect(records.first?.name == "file.bin")
         #expect(records.first?.completedAt == Date(timeIntervalSince1970: 100))
+        #expect(records.first?.sourceURL == "https://example.com/file.bin")
+        #expect(records.first?.retryOptions["dir"] == .string("/tmp"))
+        #expect(records.first?.label == "Release")
 
         try await store.remove(id: "done-1")
         #expect(try await store.records().isEmpty)

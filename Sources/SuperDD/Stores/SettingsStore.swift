@@ -8,6 +8,7 @@ import SwiftUI
 @Observable
 final class SettingsStore {
     var values: AppSettings
+    var proxyPassword = ""
     var lastError: String?
 
     private let defaults: UserDefaults
@@ -26,6 +27,22 @@ final class SettingsStore {
         } else {
             values = AppSettings()
         }
+        if values.userAgent == "SuperDD/0.1 aria2-next" {
+            values.userAgent = "SuperDD/0.2 aria2-next"
+        }
+
+        do {
+            let storedPassword = try KeychainService.proxyPassword()
+            if !values.proxyPassword.isEmpty {
+                proxyPassword = values.proxyPassword
+                try KeychainService.saveProxyPassword(values.proxyPassword)
+                values.proxyPassword = ""
+            } else {
+                proxyPassword = storedPassword
+            }
+        } catch {
+            lastError = error.localizedDescription
+        }
         if let data = try? JSONEncoder().encode(values) {
             try? FileManager.default.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: settingsURL, options: .atomic)
@@ -39,6 +56,7 @@ final class SettingsStore {
             try FileManager.default.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try data.write(to: settingsURL, options: .atomic)
             defaults.set(data, forKey: storageKey)
+            try KeychainService.saveProxyPassword(proxyPassword)
             try updateLoginItem()
             lastError = nil
         } catch {
@@ -48,6 +66,7 @@ final class SettingsStore {
 
     func restoreDefaults() {
         values = AppSettings()
+        proxyPassword = ""
         save()
     }
 
@@ -57,6 +76,14 @@ final class SettingsStore {
         case .light: .light
         case .dark: .dark
         }
+    }
+
+    /// Ephemeral engine configuration. Secrets are injected from Keychain and
+    /// never written back into settings.json or UserDefaults.
+    var runtimeValues: AppSettings {
+        var result = values
+        result.proxyPassword = proxyPassword
+        return result
     }
 
     private func updateLoginItem() throws {

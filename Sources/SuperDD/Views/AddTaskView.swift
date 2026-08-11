@@ -13,6 +13,7 @@ struct AddTaskView: View {
 
     init(store: DownloadStore) {
         self.store = store
+        _input = State(initialValue: store.pendingAddURLs.joined(separator: "\n"))
         _options = State(initialValue: AddTaskOptions(directory: store.settingsStore.values.downloadDirectory))
     }
 
@@ -22,7 +23,7 @@ struct AddTaskView: View {
                 Text("New Download")
                     .font(.title2.weight(.semibold))
                 Spacer()
-                Button("Open Torrent…") { showingTorrentImporter = true }
+                Button("Open Torrent or Metalink…") { showingTorrentImporter = true }
             }
 
             TextEditor(text: $input)
@@ -94,7 +95,33 @@ struct AddTaskView: View {
                     }
                     GridRow {
                         Text("")
-                        Toggle("Add in paused state", isOn: $options.paused)
+                        HStack {
+                            Toggle("Add paused", isOn: $options.paused)
+                            Toggle("Scheduled", isOn: $options.scheduled)
+                        }
+                    }
+                    GridRow {
+                        Text("Priority").foregroundStyle(.secondary)
+                        Picker("Priority", selection: $options.priority) {
+                            ForEach(TaskPriority.allCases) { priority in
+                                Text(priority.title).tag(priority)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    GridRow {
+                        Text("Credential").foregroundStyle(.secondary)
+                        Picker("Credential", selection: $options.credentialProfileID) {
+                            Text("Automatic / None").tag(UUID?.none)
+                            ForEach(store.settingsStore.values.features.credentialProfiles) { profile in
+                                Text(profile.name).tag(Optional(profile.id))
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    GridRow {
+                        Text("Label").foregroundStyle(.secondary)
+                        TextField("Optional task label", text: $options.label)
                     }
                 }
                 .padding(.top, 10)
@@ -106,6 +133,7 @@ struct AddTaskView: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Add") {
                     let urls = DownloadURLNormalizer.extractMany(from: input)
+                    store.pendingAddURLs = []
                     Task { await store.addURLs(urls, options: options) }
                 }
                 .buttonStyle(.borderedProminent)
@@ -116,13 +144,26 @@ struct AddTaskView: View {
         .padding(22)
         .frame(width: 600)
         .task { inputFocused = true }
+        .onDisappear { store.pendingAddURLs = [] }
         .fileImporter(
             isPresented: $showingTorrentImporter,
-            allowedContentTypes: [UTType(filenameExtension: "torrent") ?? .data],
+            allowedContentTypes: [
+                UTType(filenameExtension: "torrent") ?? .data,
+                UTType(filenameExtension: "metalink") ?? .xml,
+                UTType(filenameExtension: "meta4") ?? .xml,
+            ],
             allowsMultipleSelection: true
         ) { result in
             guard case let .success(urls) = result else { return }
-            for url in urls { Task { await store.addTorrent(at: url, options: options) } }
+            for url in urls {
+                Task {
+                    if ["metalink", "meta4"].contains(url.pathExtension.lowercased()) {
+                        await store.addMetalink(at: url, options: options)
+                    } else {
+                        await store.addTorrent(at: url, options: options)
+                    }
+                }
+            }
         }
     }
 

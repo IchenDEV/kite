@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Super DD Download Manager",
+  "version": "0.2.0",
+  "description": "Send downloads, pages, selections, and links to Super DD.",
+  "icons": { "128": "icons/icon-128.png" },
+  "permissions": ["contextMenus", "cookies", "downloads", "storage", "tabs"],
+  "host_permissions": ["<all_urls>", "http://127.0.0.1/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Download with Super DD" },
+  "options_page": "options.html",
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
+  ]
+}

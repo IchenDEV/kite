@@ -36,7 +36,7 @@ struct TaskInspectorView: View {
                     case .files:
                         TaskFilesView(store: store, task: task)
                     case .peers:
-                        PeerListView(peers: store.peers)
+                        PeerListView(peers: store.peers, countries: store.peerCountries)
                     case .trackers:
                         TrackerListView(trackers: task.trackers)
                     }
@@ -183,6 +183,7 @@ private struct TaskFilesView: View {
 
 private struct PeerListView: View {
     let peers: [Peer]
+    let countries: [String: String]
 
     var body: some View {
         if peers.isEmpty {
@@ -194,6 +195,9 @@ private struct PeerListView: View {
                 }
                 TableColumn("Client") { peer in
                     Text(peer.client.isEmpty ? "Unknown" : peer.client)
+                }
+                TableColumn("Region") { peer in
+                    Text(countries[peer.id] ?? "—")
                 }
                 TableColumn("Down") { peer in
                     Text(Formatters.speed(peer.downloadSpeed)).monospacedDigit()

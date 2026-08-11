@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Super DD Extension</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main>
+      <h1>Super DD</h1>
+      <p>Enter the values shown in Super DD → Settings → Network.</p>
+      <label>Port <input id="port" type="number" min="1024" max="65535" value="29110"></label>
+      <label>Access secret <input id="secret" type="password" autocomplete="off"></label>
+      <label class="checkbox"><input id="takeOverDownloads" type="checkbox"> Automatically take over browser downloads</label>
+      <div class="actions">
+        <button id="save">Save</button>
+        <button id="test" class="secondary">Test Connection</button>
+      </div>
+      <output id="status" aria-live="polite"></output>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

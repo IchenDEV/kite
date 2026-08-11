@@ -38,11 +38,11 @@ struct DashboardView: View {
                     .accessibilityLabel("Transfer speed over the last two minutes")
                 }
 
-                if !store.activeTasks.isEmpty {
+                if !store.displayedActiveTasks.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Active Downloads")
                             .font(.headline)
-                        ForEach(store.activeTasks.prefix(6)) { task in
+                        ForEach(store.displayedActiveTasks.prefix(6)) { task in
                             DashboardTaskLine(task: task)
                         }
                     }

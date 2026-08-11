@@ -1,6 +1,165 @@
 import Foundation
 
 struct AppSettings: Codable, Equatable, Sendable {
+    enum ConflictPolicy: String, Codable, CaseIterable, Identifiable, Sendable {
+        case rename
+        case overwrite
+        case skip
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .rename: "Keep Both"
+            case .overwrite: "Replace Existing File"
+            case .skip: "Skip Existing File"
+            }
+        }
+    }
+
+    enum CompletionAction: String, Codable, CaseIterable, Identifiable, Sendable {
+        case none
+        case quit
+        case sleep
+        case shutDown
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .none: "Do Nothing"
+            case .quit: "Quit Super DD"
+            case .sleep: "Put Mac to Sleep"
+            case .shutDown: "Shut Down Mac"
+            }
+        }
+    }
+
+    struct CredentialProfile: Codable, Equatable, Identifiable, Sendable {
+        var id = UUID()
+        var name: String
+        var hostPattern: String
+        var username: String
+        var sendsCookie = false
+    }
+
+    struct RSSFeed: Codable, Equatable, Identifiable, Sendable {
+        var id = UUID()
+        var name: String
+        var url: String
+        var enabled = true
+        var lastCheckedAt: Date?
+    }
+
+    struct RSSRule: Codable, Equatable, Identifiable, Sendable {
+        var id = UUID()
+        var name: String
+        var feedID: UUID?
+        var titlePattern: String
+        var destination: String
+        var label = "RSS"
+        var paused = false
+        var enabled = true
+    }
+
+    struct SearchProvider: Codable, Equatable, Identifiable, Sendable {
+        var id = UUID()
+        var name: String
+        /// URL template containing a literal `{query}` placeholder.
+        var urlTemplate: String
+        var enabled = true
+    }
+
+    struct FeatureSettings: Codable, Equatable, Sendable {
+        struct Capture: Codable, Equatable, Sendable {
+            var monitorClipboard = false
+            var confirmClipboardLinks = true
+            var ignoredHosts: [String] = []
+        }
+
+        struct Reliability: Codable, Equatable, Sendable {
+            var maxTries = 5
+            var retryWaitSeconds = 5
+            var automaticRetry = true
+            var checkIntegrity = true
+            var conflictPolicy: ConflictPolicy = .rename
+        }
+
+        struct TaskSchedule: Codable, Equatable, Sendable {
+            var enabled = false
+            var startHour = 0
+            var endHour = 24
+            var weekdays = Set(1 ... 7)
+            var pauseOutsideWindow = false
+            var completionAction: CompletionAction = .none
+            var completionCountdownSeconds = 30
+        }
+
+        struct PostProcessing: Codable, Equatable, Sendable {
+            var autoExtractArchives = false
+            var deleteArchiveAfterExtraction = false
+            var extractionSubdirectory = ""
+            var revealCompletedFiles = false
+            var openCompletedFiles = false
+            var command = ""
+        }
+
+        struct Media: Codable, Equatable, Sendable {
+            var resolveStreamingManifests = true
+            var preferredHeight = 1_080
+            var preferredAudioLanguage = ""
+            var preferredSubtitleLanguages: [String] = []
+            var downloadSubtitles = true
+            var audioOnly = false
+        }
+
+        struct NetworkPolicy: Codable, Equatable, Sendable {
+            var bindInterface = ""
+            var noDirectFallback = false
+            var enableUPnP = false
+            var enableNATPMP = false
+            var geoIPDatabaseURL = ""
+        }
+
+        struct Remote: Codable, Equatable, Sendable {
+            var enabled = false
+            var allowLAN = false
+            var port = 29_120
+            var secret = UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        }
+
+        struct TorrentAutomation: Codable, Equatable, Sendable {
+            var watchDirectory = ""
+            var watchIntervalSeconds = 15
+            var rssCheckIntervalMinutes = 15
+            var feeds: [RSSFeed] = []
+            var rules: [RSSRule] = []
+            var searchProviders: [SearchProvider] = []
+        }
+
+        struct Plugins: Codable, Equatable, Sendable {
+            var enabled = true
+            var registryURL = "https://motrix.app/plugins"
+            var allowNetworkAccessByDefault = false
+        }
+
+        struct Updates: Codable, Equatable, Sendable {
+            var automaticallyChecks = true
+            var feedURL = "https://api.github.com/repos/IchenDEV/super-dd/releases/latest"
+            var lastCheckedAt: Date?
+        }
+
+        var capture = Capture()
+        var reliability = Reliability()
+        var taskSchedule = TaskSchedule()
+        var postProcessing = PostProcessing()
+        var media = Media()
+        var networkPolicy = NetworkPolicy()
+        var remote = Remote()
+        var torrentAutomation = TorrentAutomation()
+        var plugins = Plugins()
+        var updates = Updates()
+        var credentialProfiles: [CredentialProfile] = []
+    }
+
     struct FileCategory: Codable, Equatable, Identifiable, Sendable {
         var id = UUID()
         var name: String
@@ -79,7 +238,7 @@ struct AppSettings: Codable, Equatable, Sendable {
     var proxyURL = ""
     var proxyUsername = ""
     var proxyPassword = ""
-    var userAgent = "SuperDD/0.1 aria2-next"
+    var userAgent = "SuperDD/0.2 aria2-next"
     var rpcPort = 29_100
 
     var notificationsEnabled = true
@@ -90,6 +249,13 @@ struct AppSettings: Codable, Equatable, Sendable {
     var extensionServerPort = 29_110
     var extensionSecret = UUID().uuidString.replacingOccurrences(of: "-", with: "")
     var speedSchedule = SpeedSchedule()
+    /// Optional for backward-compatible decoding of settings written by 0.1.x.
+    var featureSettings: FeatureSettings? = FeatureSettings()
+
+    var features: FeatureSettings {
+        get { featureSettings ?? FeatureSettings() }
+        set { featureSettings = newValue }
+    }
 }
 
 struct AddTaskOptions: Sendable {
@@ -102,6 +268,10 @@ struct AddTaskOptions: Sendable {
     var checksum = ""
     var proxy = ""
     var paused = false
+    var credentialProfileID: UUID?
+    var label = ""
+    var scheduled = false
+    var priority: TaskPriority = .normal
 
     init(directory: String) {
         self.directory = directory

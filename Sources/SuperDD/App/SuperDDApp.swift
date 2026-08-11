@@ -6,8 +6,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var downloadStore: DownloadStore?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
+        if ProcessInfo.processInfo.arguments.contains("--headless") {
+            NSApp.setActivationPolicy(.accessory)
+            NSApp.windows.forEach { $0.orderOut(nil) }
+        } else {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
@@ -73,6 +78,9 @@ struct SuperDDApp: App {
                     .keyboardShortcut("n", modifiers: .command)
                 Button("Open Torrent…") { openTorrent() }
                     .keyboardShortcut("o", modifiers: .command)
+                Button("Create Torrent…") { downloadStore.showingTorrentCreator = true }
+                Button("Add Links from Clipboard") { downloadStore.pasteLinksFromClipboard() }
+                    .keyboardShortcut("v", modifiers: [.command, .shift])
             }
             CommandMenu("Downloads") {
                 Button(downloadStore.canPauseSelection ? "Pause" : "Resume") {
@@ -80,6 +88,24 @@ struct SuperDDApp: App {
                 }
                 .keyboardShortcut("p", modifiers: .command)
                 .disabled(!downloadStore.canPauseSelection && !downloadStore.canResumeSelection)
+
+                Button("Retry Failed Download") {
+                    Task { await downloadStore.retrySelection() }
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
+                .disabled(!downloadStore.canRetrySelection)
+
+                Menu("Queue Position") {
+                    Button("Move to Top") { Task { await downloadStore.moveSelection(.top) } }
+                        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+                    Button("Move Up") { Task { await downloadStore.moveSelection(.up) } }
+                        .keyboardShortcut(.upArrow, modifiers: .command)
+                    Button("Move Down") { Task { await downloadStore.moveSelection(.down) } }
+                        .keyboardShortcut(.downArrow, modifiers: .command)
+                    Button("Move to Bottom") { Task { await downloadStore.moveSelection(.bottom) } }
+                        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+                }
+                .disabled(downloadStore.selectedTasks.allSatisfy { $0.status != .waiting && $0.status != .paused })
 
                 Button("Remove") { Task { await downloadStore.removeSelection() } }
                     .keyboardShortcut(.delete, modifiers: .command)
@@ -113,9 +139,11 @@ struct SuperDDApp: App {
             MenuBarView(store: downloadStore)
         } label: {
             Label(
-                downloadStore.activeTasks.isEmpty ? "Super DD" : "↓ \(Formatters.speed(downloadStore.globalStat.downloadSpeed))",
+                downloadStore.displayedActiveTasks.isEmpty ? "Super DD" : "↓ \(Formatters.speed(downloadStore.globalStat.downloadSpeed))",
                 systemImage: "arrow.down.circle"
             )
+            .symbolRenderingMode(.monochrome)
+            .foregroundStyle(.primary)
         }
         .menuBarExtraStyle(.menu)
     }

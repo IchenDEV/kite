@@ -20,6 +20,8 @@ struct HistoryView: View {
                             Text(record.name).lineLimit(1)
                         }
                         .contextMenu {
+                            Button("Download Again") { Task { await store.retryHistory(record) } }
+                                .disabled(!record.canRetry)
                             Button("Show Folder") { store.showInFinder(record) }
                             Divider()
                             Button("Remove from History", role: .destructive) {
@@ -31,7 +33,12 @@ struct HistoryView: View {
                     .width(min: 260, ideal: 420)
 
                     TableColumn("Status") { record in
-                        Text(record.status.title)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(record.status.title)
+                            if !record.label.isEmpty {
+                                Text(record.label).font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     .width(90)
 

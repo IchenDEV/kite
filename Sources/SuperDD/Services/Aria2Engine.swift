@@ -153,6 +153,8 @@ actor Aria2Engine {
 
     private static func arguments(for configuration: Aria2EngineConfiguration) -> [String] {
         let settings = configuration.settings
+        let reliability = settings.features.reliability
+        let conflictPolicy = reliability.conflictPolicy
         let sessionPath = configuration.supportDirectory.appending(path: "aria2.session").path
         var arguments = [
             "--enable-rpc=true",
@@ -174,7 +176,11 @@ actor Aria2Engine {
             "--max-download-limit=\(settings.perTaskDownloadLimit)",
             "--max-upload-limit=\(settings.perTaskUploadLimit)",
             "--file-allocation=\(settings.fileAllocation)",
-            "--auto-file-renaming=\(settings.autoFileRenaming)",
+            "--auto-file-renaming=\(conflictPolicy == .rename)",
+            "--allow-overwrite=\(conflictPolicy == .overwrite)",
+            "--max-tries=\(max(reliability.maxTries, 0))",
+            "--retry-wait=\(max(reliability.retryWaitSeconds, 0))",
+            "--check-integrity=\(reliability.checkIntegrity)",
             "--user-agent=\(settings.userAgent)",
             "--listen-port=\(settings.btListenPort + configuration.portOffset)",
             "--dht-listen-port=\(settings.dhtListenPort + configuration.portOffset)",
@@ -205,6 +211,8 @@ actor Aria2Engine {
         if let url = configuration.resources.ed2kServerList { arguments.append("--ed2k-server-list=\(url.path)") }
         if let url = configuration.resources.ed2kNodeList { arguments.append("--ed2k-node-list=\(url.path)") }
         if let url = configuration.resources.peerBlocklist { arguments.append("--bt-peer-blocklist=\(url.path)") }
+        let bindInterface = settings.features.networkPolicy.bindInterface.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !bindInterface.isEmpty { arguments.append("--interface=\(bindInterface)") }
         return arguments
     }
 

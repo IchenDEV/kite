@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Swift package
+        run: swift test
+      - name: Package browser extensions
+        run: ./script/package_browser_extensions.sh
+      - name: Verify extension archives
+        run: |
+          unzip -t dist/browser-extensions/super-dd-chromium.zip
+          unzip -t dist/browser-extensions/super-dd-firefox.zip
+          unzip -t dist/browser-extensions/super-dd-safari-project.zip
+      - name: Build application bundle
+        run: ./script/build_and_run.sh --package
+      - name: Verify signing and bundle structure
+        run: codesign --verify --deep --strict dist/SuperDD.app

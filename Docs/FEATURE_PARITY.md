@@ -1,45 +1,52 @@
-# Feature parity audit
+# Feature parity and release gates
 
 Audit baseline:
 
 - Motrix Next: `dc12e7d93f86a00c52b57871498ea11eb5ee946c`
 - Motrix: `c9716c332f75b7592c66efc494dd51e61105f552`
 - aria2-next: `b209e18619cfd6fde7b15ab946dbec112a24f20c`
+- MDXP method contract: protocol `1.0`
 
-Legend: `Done` is implemented and exercised in this repository; `Partial` has a working core but not every reference option; `Open` is not implemented and must not be claimed as parity.
+`Implemented` means working code exists in this repository and is included in the build. `Scoped` documents an intentional boundary instead of implying broader compatibility. `External gate` requires credentials or third-party store review that cannot live in source control.
 
-| Surface | Status | Super DD implementation / remaining gap |
+| Surface | Status | Super DD implementation / boundary |
 | --- | --- | --- |
-| HTTP/HTTPS/FTP downloads | Done | aria2-next JSON-RPC, headers, cookie, referer, UA, checksum, proxy |
-| Magnet and `.torrent` | Done | native file importer, metadata pause, selective files |
-| ED2K and Thunder | Done | native aria2-next ED2K plus Thunder envelope decoding |
-| Active/waiting/stopped control | Done | poll, pause/resume/remove, batch selection, session file |
-| BT discovery and sharing | Done | DHT v4/v6, PEX, LPD, encryption, peers, ports, seed ratio/time |
-| Tracker management | Done | multiple remote sources merged and applied to aria2 |
-| BT peer blocklist | Done | cached weekly and passed to aria2-next |
-| ED2K bootstrap | Done | cached `server.met` and `nodes.dat` |
-| Speed limits and schedules | Done | global, per-task defaults, weekday/time schedule |
-| Proxy scopes | Partial | engine/system/manual proxy work; separate update/tracker proxy scopes are open |
-| History and recovery | Done | aria2 session plus native SQLite terminal history |
-| macOS notifications | Done | completion/failure Notification Center delivery |
-| Power integration | Partial | idle-sleep assertion works; shutdown-after-completion is open |
-| Dock and menu bar | Partial | badge, live speed and actions work; custom Dock progress ring is open |
-| Protocol/file handlers | Done | Magnet, ED2K, Thunder, SuperDD, torrent association |
-| Browser extension API | Done | compatible core endpoints, auth, CORS, headers/cookie/filename forwarding |
-| Browser extension packages | Open | Chrome/Edge/Firefox store packages are not included |
-| Favorite/recent folders | Done | native destination menu, star action and bounded recent list |
-| File-type categorization | Done | editable extension rules route new URL downloads before submission |
-| GeoIP peer flags | Open | peer table works without GeoIP database |
-| UPnP / NAT-PMP | Open | no native mapper yet |
-| Diagnostics ZIP / DB rebuild | Partial | redacted pure-Swift ZIP export and integrity check work; automatic DB rebuild is open |
-| Auto update | Open | no signed update channel yet |
-| Theme and localization | Partial | system/light/dark and Simplified Chinese work; color presets and the remaining languages are open |
-| Lightweight WebView destruction | Not applicable | there is no WebView; SwiftUI remains native and low overhead |
-| Customizable dashboard | Partial | live native chart and task summary work; tile rearrangement is open |
-| In-app notification center | Open | system notifications work; durable inbox is open |
-| Motrix MDXP CLI pairing | Open | authenticated local REST API exists; MDXP device pairing is open |
-| Plugin sandbox and marketplace | Open | no QuickJS/JavaScriptCore plugin runtime yet |
-| URL resolver/media mux plugins | Open | direct URL tasks work; resolver ecosystem is open |
-| Headless/Docker server | Open | the native app is complete enough to run independently, but Motrix's remote headless deployment surface is not implemented yet |
+| HTTP/HTTPS/FTP | Implemented | aria2-next, segmentation, resume, headers, checksum, auth and proxy |
+| Magnet, torrent, ED2K, Thunder | Implemented | native importer/deep links, metadata, selected files and ED2K bootstrap |
+| Metalink | Implemented | `.metalink`/`.meta4` importer and retry metadata |
+| Queue and task control | Implemented | batch pause/resume/remove/retry, four-way reorder and three priorities |
+| Crash/restart recovery | Implemented | aria2 session plus persisted media checkpoint and task metadata |
+| Retry and conflict policy | Implemented | exponential retry, max attempts, keep-both/replace/skip and integrity check |
+| Schedules and completion actions | Implemented | speed and task windows, weekdays, quit/sleep/shutdown countdown |
+| History | Implemented | SQLite migration, source/options/error/label persistence and download-again |
+| Credentials and cookies | Implemented | host-scoped profiles in macOS Keychain; secrets redacted from settings/diagnostics |
+| Proxy and VPN binding | Implemented | HTTP/SOCKS URL, proxy auth, per-task override and network-interface binding |
+| Browser capture API | Implemented | loopback, Bearer auth, limited CORS, headers/cookies/filename forwarding |
+| Chromium and Firefox packages | Implemented | reproducible ZIPs with manifests, icon and archive validation |
+| Safari extension | Implemented | Apple converter project builds successfully without signing |
+| Extension-store publication | External gate | Chrome/Firefox/Safari store accounts and review are not repository credentials |
+| BT discovery/sharing | Implemented | DHT v4/v6, PEX, LPD, encryption, peers, trackers, seeding ratio/time |
+| Tracker/blocklist resources | Implemented | remote tracker merge, peer blocklist, `server.met` and `nodes.dat` cache |
+| Torrent creation | Implemented | pure Swift bencode and SHA-1 pieces for files/directories |
+| RSS/Atom and watch folder | Implemented | polling, regex rules, persistent dedupe, labels/destination/paused behavior |
+| Search providers and labels | Implemented | configurable `{query}` providers, searchable task labels |
+| UPnP / NAT-PMP | Implemented | opt-in TCP/UDP mappings with cleanup and visible state |
+| GeoIP peer labels | Implemented | local/remote CIDR or explicit-range CSV with binary lookup |
+| HLS media | Scoped | master/media playlists, variant height, byte ranges, init segment and resume; DRM/AES streams rejected |
+| DASH media | Scoped | static `SegmentList` representations; dynamic `SegmentTemplate` and separate A/V mux are not claimed |
+| Archive extraction | Scoped | macOS `ditto`/`bsdtar`: ZIP/CBZ/TAR/TGZ/TBZ2/TXZ/7z/RAR; password UI and multipart repair are not claimed |
+| Post-download hooks | Implemented | extract/delete/reveal/open, command environment, error reporting and timeout |
+| Remote Web UI/API | Implemented | separate disabled-by-default listener, Bearer auth, rate limit and LAN opt-in |
+| MDXP 1.0 control plane | Implemented | initialize, ping, submit/cancel, task CRUD, stats, engine and URL methods |
+| Device pairing/relay | Scoped | shared-secret LAN control only; no cloud relay or account service |
+| Headless control | Implemented | `--headless` app mode and standalone `superddctl` MDXP client |
+| Plugin sandbox | Implemented | separate JavaScriptCore helper, no host bridges, timeout and error isolation |
+| Plugin registry | Implemented | JSON catalog, SHA-256 required install, path validation and manifest ID check |
+| Motrix plugin binary compatibility | Scoped | Super DD resolver API is intentionally smaller; foreign plugin bundles are not claimed compatible |
+| Native update client | Implemented | GitHub release check, architecture selection and mandatory SHA-256 verification |
+| Signing/notarization workflow | Implemented | Developer ID, hardened runtime, notarization, staple, `spctl`, DMG and checksums |
+| Signed public release | External gate | requires the maintainer’s Developer ID/notary secrets and a version tag |
+| macOS 26 appearance | Implemented | native split view/toolbars/inspector/glass and semantic SF Symbol colors in light/dark modes |
+| Localization | Scoped | English and Simplified Chinese; other Motrix locales are not yet translated |
 
-“全部功能对等”尚未完成。This matrix is the release gate: an `Open` or `Partial` row cannot be described as finished until its implementation and verification land.
+This table is also the honesty boundary for release notes: `Scoped` and `External gate` rows must retain their qualifier.

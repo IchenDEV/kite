@@ -143,6 +143,38 @@ struct DownloadTask: Codable, Identifiable, Hashable, Sendable {
         completedPieces = json.string("bitfield")
         followedBy = json.array("followedBy").compactMap(\.stringValue)
     }
+
+    static func media(
+        gid: String,
+        status: DownloadStatus,
+        sourceURL: String,
+        outputPath: String,
+        completedLength: Int64 = 0,
+        totalLength: Int64 = 0,
+        downloadSpeed: Int64 = 0,
+        errorMessage: String? = nil
+    ) -> DownloadTask {
+        var json: [String: JSONValue] = [
+            "gid": .string(gid),
+            "status": .string(status.rawValue),
+            "totalLength": .string(String(totalLength)),
+            "completedLength": .string(String(completedLength)),
+            "downloadSpeed": .string(String(downloadSpeed)),
+            "dir": .string(URL(fileURLWithPath: outputPath).deletingLastPathComponent().path),
+            "files": .array([
+                .object([
+                    "index": .string("1"),
+                    "path": .string(outputPath),
+                    "length": .string(String(totalLength)),
+                    "completedLength": .string(String(completedLength)),
+                    "selected": .string("true"),
+                    "uris": .array([.object(["uri": .string(sourceURL), "status": .string("used")])]),
+                ]),
+            ]),
+        ]
+        if let errorMessage { json["errorMessage"] = .string(errorMessage) }
+        return DownloadTask(json: json)
+    }
 }
 
 struct Peer: Identifiable, Hashable, Sendable {
@@ -197,7 +229,7 @@ struct SpeedSample: Identifiable, Equatable, Sendable {
     let upload: Int64
 }
 
-struct HistoryRecord: Identifiable, Hashable, Sendable {
+struct HistoryRecord: Identifiable, Sendable {
     let id: String
     let name: String
     let status: DownloadStatus
@@ -205,4 +237,13 @@ struct HistoryRecord: Identifiable, Hashable, Sendable {
     let completedLength: Int64
     let directory: String
     let completedAt: Date
+    let sourceURL: String?
+    let sourceFilePath: String?
+    let retryOptions: [String: JSONValue]
+    let errorMessage: String?
+    let label: String
+
+    var canRetry: Bool {
+        sourceURL?.isEmpty == false || sourceFilePath?.isEmpty == false
+    }
 }

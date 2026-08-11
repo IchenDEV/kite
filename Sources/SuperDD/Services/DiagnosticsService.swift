@@ -126,7 +126,7 @@ actor DiagnosticsService {
         let redactedSettings = try JSONSerialization.data(withJSONObject: settingsObject, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
 
         let report: [String: Any] = [
-            "appVersion": "0.1.0",
+            "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.0",
             "generatedAt": ISO8601DateFormatter().string(from: .now),
             "historyIntegrity": historyIntegrity,
             "macOS": ProcessInfo.processInfo.operatingSystemVersionString,

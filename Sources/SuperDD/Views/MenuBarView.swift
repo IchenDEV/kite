@@ -22,7 +22,7 @@ struct MenuBarView: View {
 
         Text("Download  \(Formatters.speed(store.globalStat.downloadSpeed))")
         Text("Upload  \(Formatters.speed(store.globalStat.uploadSpeed))")
-        Text("Active  \(store.activeTasks.count)")
+        Text("Active  \(store.displayedActiveTasks.count)")
 
         Divider()
 

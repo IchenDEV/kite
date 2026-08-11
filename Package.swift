@@ -9,6 +9,8 @@ let package = Package(
     ],
     products: [
         .executable(name: "SuperDD", targets: ["SuperDD"]),
+        .executable(name: "superddctl", targets: ["SuperDDCLI"]),
+        .executable(name: "superdd-plugin-host", targets: ["SuperDDPluginHost"]),
     ],
     targets: [
         .systemLibrary(
@@ -25,17 +27,31 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
+                .linkedFramework("AVFoundation"),
                 .linkedFramework("Charts"),
                 .linkedFramework("IOKit"),
+                .linkedFramework("JavaScriptCore"),
                 .linkedFramework("Network"),
+                .linkedFramework("Security"),
                 .linkedFramework("ServiceManagement"),
                 .linkedFramework("UserNotifications"),
             ]
+        ),
+        .executableTarget(
+            name: "SuperDDPluginHost",
+            path: "Sources/SuperDDPluginHost",
+            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")],
+            linkerSettings: [.linkedFramework("JavaScriptCore")]
         ),
         .testTarget(
             name: "SuperDDTests",
             dependencies: ["SuperDD"],
             path: "Tests/SuperDDTests"
+        ),
+        .executableTarget(
+            name: "SuperDDCLI",
+            path: "Sources/SuperDDCLI",
+            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
     ]
 )

@@ -32,12 +32,24 @@ struct SidebarView: View {
         Group {
             if let count = store.count(for: section) {
                 Label(section.title, systemImage: section.systemImage)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundStyle(.primary)
                     .badge(count)
             } else {
                 Label(section.title, systemImage: section.systemImage)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundStyle(.primary)
             }
         }
         .tag(section)
+        .overlay(alignment: .topLeading) {
+            if section == .dashboard {
+                SidebarHorizontalScrollGuard()
+                    .frame(width: 1, height: 1)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 }
 

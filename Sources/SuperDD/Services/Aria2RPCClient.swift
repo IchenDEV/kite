@@ -62,17 +62,28 @@ actor Aria2RPCClient {
         return payload.result ?? .null
     }
 
-    func addURI(_ uri: String, options: [String: JSONValue]) async throws -> String {
-        let result = try await call("aria2.addUri", params: [.array([.string(uri)]), .object(options)])
+    func addURI(_ uri: String, options: [String: JSONValue], position: Int? = nil) async throws -> String {
+        var params: [JSONValue] = [.array([.string(uri)]), .object(options)]
+        if let position { params.append(.number(Double(position))) }
+        let result = try await call("aria2.addUri", params: params)
         guard let gid = result.stringValue else { throw Aria2RPCError(code: -1, message: "aria2.addUri returned no GID") }
         return gid
     }
 
-    func addTorrent(data: Data, options: [String: JSONValue]) async throws -> String {
+    func addTorrent(data: Data, options: [String: JSONValue], position: Int? = nil) async throws -> String {
         let encoded = data.base64EncodedString()
-        let result = try await call("aria2.addTorrent", params: [.string(encoded), .array([]), .object(options)])
+        var params: [JSONValue] = [.string(encoded), .array([]), .object(options)]
+        if let position { params.append(.number(Double(position))) }
+        let result = try await call("aria2.addTorrent", params: params)
         guard let gid = result.stringValue else { throw Aria2RPCError(code: -1, message: "aria2.addTorrent returned no GID") }
         return gid
+    }
+
+    func addMetalink(data: Data, options: [String: JSONValue], position: Int? = nil) async throws -> [String] {
+        var params: [JSONValue] = [.string(data.base64EncodedString()), .object(options)]
+        if let position { params.append(.number(Double(position))) }
+        let result = try await call("aria2.addMetalink", params: params)
+        return result.arrayValue?.compactMap(\.stringValue) ?? []
     }
 
     func tellActive() async throws -> [DownloadTask] {
@@ -120,6 +131,28 @@ actor Aria2RPCClient {
 
     func changeGlobalOption(_ options: [String: JSONValue]) async throws {
         _ = try await call("aria2.changeGlobalOption", params: [.object(options)])
+    }
+
+    func options(gid: String) async throws -> [String: JSONValue] {
+        let value = try await call("aria2.getOption", params: [.string(gid)])
+        return value.objectValue ?? [:]
+    }
+
+    @discardableResult
+    func changePosition(gid: String, position: Int, how: String = "POS_SET") async throws -> Int {
+        let result = try await call(
+            "aria2.changePosition",
+            params: [.string(gid), .number(Double(position)), .string(how)]
+        )
+        return Int(result.int64Value ?? 0)
+    }
+
+    func pauseAll() async throws {
+        _ = try await call("aria2.forcePauseAll")
+    }
+
+    func resumeAll() async throws {
+        _ = try await call("aria2.unpauseAll")
     }
 
     func peers(gid: String) async throws -> [Peer] {
