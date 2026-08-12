@@ -20,9 +20,11 @@ struct MenuBarView: View {
 
         Divider()
 
-        Text("Download  \(Formatters.speed(store.globalStat.downloadSpeed))")
+        let summary = store.activeDownloadSummary
+        Text("Progress  \(summary.progress.map(Formatters.percent) ?? "—")")
+        Text("Download  \(Formatters.speed(summary.downloadSpeed))")
         Text("Upload  \(Formatters.speed(store.globalStat.uploadSpeed))")
-        Text("Active  \(store.displayedActiveTasks.count)")
+        Text("Active  \(summary.activeCount)")
 
         Divider()
 

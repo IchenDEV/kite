@@ -87,6 +87,10 @@ final class DownloadStore {
         activeTasks + mediaTasks.filter { $0.status == .active }
     }
 
+    var activeDownloadSummary: ActiveDownloadSummary {
+        ActiveDownloadSummary(tasks: displayedActiveTasks)
+    }
+
     var visibleTasks: [DownloadTask] {
         let base: [DownloadTask]
         switch section {
