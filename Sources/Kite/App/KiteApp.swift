@@ -141,12 +141,18 @@ struct KiteApp: App {
         MenuBarExtra {
             MenuBarView(store: downloadStore)
         } label: {
-            Label(
-                downloadStore.displayedActiveTasks.isEmpty ? "Kite" : "↓ \(Formatters.speed(downloadStore.globalStat.downloadSpeed))",
-                systemImage: "arrow.down.circle"
-            )
-            .symbolRenderingMode(.monochrome)
+            let summary = downloadStore.activeDownloadSummary
+            HStack(alignment: .center, spacing: 4) {
+                KiteMenuBarMark()
+                if summary.activeCount == 0 {
+                    Text("Kite")
+                } else {
+                    Text("\(summary.progress.map(Formatters.percent) ?? "—") · \(Formatters.speed(summary.downloadSpeed))")
+                        .monospacedDigit()
+                }
+            }
             .foregroundStyle(.primary)
+            .accessibilityLabel(menuBarAccessibilityLabel(for: summary))
         }
         .menuBarExtraStyle(.menu)
     }
@@ -160,5 +166,11 @@ struct KiteApp: App {
         for url in panel.urls {
             Task { await downloadStore.addTorrent(at: url) }
         }
+    }
+
+    private func menuBarAccessibilityLabel(for summary: ActiveDownloadSummary) -> String {
+        guard summary.activeCount > 0 else { return "Kite, no active downloads" }
+        let progress = summary.progress.map(Formatters.percent) ?? "unknown progress"
+        return "Kite, download progress \(progress), download speed \(Formatters.speed(summary.downloadSpeed))"
     }
 }
