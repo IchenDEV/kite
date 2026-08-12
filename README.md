@@ -23,7 +23,7 @@ Kite 以 Swift 6.2、SwiftUI、AppKit 和 Apple 系统框架实现桌面体验�
 ### 下载入口
 
 - HTTP/HTTPS/FTP、BitTorrent、Magnet、Metalink、ED2K、Thunder、HLS 与 DASH。
-- `.torrent`、`.metalink`、`.meta4` 文件，URL/String 拖放，剪贴板监控和深链。
+- `.torrent`、`.metalink`、`.meta4` 文件，URL/String 拖放，打开或重新聚焦应用时自动识别剪贴板下载链接，以及深链。
 - Safari Web Extension 工程，以及可直接加载或发布的 Chromium/Firefox 扩展包。
 - 浏览器当前页面、右键链接、页面全部链接、Cookie、Referer、User-Agent 和请求头转发。
 

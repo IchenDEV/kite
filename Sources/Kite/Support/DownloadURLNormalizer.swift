@@ -1,6 +1,8 @@
 import Foundation
 
 enum DownloadURLNormalizer {
+    private static let networkSchemes = Set(["http", "https", "ftp"])
+
     static func normalize(_ rawValue: String) -> String? {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -16,8 +18,34 @@ enum DownloadURLNormalizer {
     }
 
     static func extractMany(from text: String) -> [String] {
-        text.split(whereSeparator: \.isNewline)
-            .compactMap { normalize(String($0)) }
+        var seen = Set<String>()
+        return text.split(whereSeparator: \.isNewline)
+            .compactMap { normalizedDownloadURL(String($0)) }
+            .filter { seen.insert($0).inserted }
+    }
+
+    private static func normalizedDownloadURL(_ value: String) -> String? {
+        guard let normalized = normalize(value) else { return nil }
+        let lowercased = normalized.lowercased()
+
+        if lowercased.hasPrefix("ed2k://|file|") {
+            return normalized
+        }
+
+        guard let components = URLComponents(string: normalized),
+              let scheme = components.scheme?.lowercased() else { return nil }
+
+        if networkSchemes.contains(scheme) {
+            guard let host = components.host, !host.isEmpty else { return nil }
+            return normalized
+        }
+
+        if scheme == "magnet",
+           components.queryItems?.contains(where: { $0.name.lowercased() == "xt" && !($0.value ?? "").isEmpty }) == true {
+            return normalized
+        }
+
+        return nil
     }
 
     private static func decodeThunder(_ value: String) -> String? {

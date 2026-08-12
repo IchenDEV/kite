@@ -28,4 +28,32 @@ struct DownloadURLNormalizerTests {
         let result = DownloadURLNormalizer.extractMany(from: " https://a.example/file \n\nmagnet:?xt=urn:btih:123 ")
         #expect(result == ["https://a.example/file", "magnet:?xt=urn:btih:123"])
     }
+
+    @Test("Clipboard extraction ignores ordinary text and malformed links")
+    func ignoresNonDownloadText() {
+        let result = DownloadURLNormalizer.extractMany(from: """
+        Remember to download this later
+        www.example.com/file.zip
+        https://
+        magnet:?dn=missing-hash
+        """)
+        #expect(result.isEmpty)
+    }
+
+    @Test("Clipboard extraction accepts supported protocols and removes duplicates")
+    func supportedProtocols() {
+        let result = DownloadURLNormalizer.extractMany(from: """
+        https://example.com/file.zip
+        ftp://downloads.example.com/file.iso
+        ed2k://|file|example.iso|1|0123456789ABCDEF0123456789ABCDEF|/
+        magnet:?xt=urn:btih:123
+        https://example.com/file.zip
+        """)
+        #expect(result == [
+            "https://example.com/file.zip",
+            "ftp://downloads.example.com/file.iso",
+            "ed2k://|file|example.iso|1|0123456789ABCDEF0123456789ABCDEF|/",
+            "magnet:?xt=urn:btih:123",
+        ])
+    }
 }
