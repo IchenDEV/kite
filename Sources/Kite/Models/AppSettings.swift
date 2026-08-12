@@ -70,7 +70,7 @@ struct AppSettings: Codable, Equatable, Sendable {
 
     struct FeatureSettings: Codable, Equatable, Sendable {
         struct Capture: Codable, Equatable, Sendable {
-            var monitorClipboard = false
+            var monitorClipboard = true
             var confirmClipboardLinks = true
             var ignoredHosts: [String] = []
         }

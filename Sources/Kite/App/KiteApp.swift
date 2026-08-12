@@ -69,6 +69,9 @@ struct KiteApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .showAddTask)) { _ in
                     downloadStore.showingAddTask = true
                 }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    downloadStore.recognizeClipboardOnActivation()
+                }
         }
         .defaultSize(width: 1_120, height: 720)
         .windowToolbarStyle(.unified)

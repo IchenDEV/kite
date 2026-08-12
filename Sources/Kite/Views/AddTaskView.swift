@@ -144,6 +144,9 @@ struct AddTaskView: View {
         .padding(22)
         .frame(width: 600)
         .task { inputFocused = true }
+        .onChange(of: store.pendingAddURLs) { _, urls in
+            appendPendingURLs(urls)
+        }
         .onDisappear { store.pendingAddURLs = [] }
         .fileImporter(
             isPresented: $showingTorrentImporter,
@@ -172,6 +175,17 @@ struct AddTaskView: View {
             Text(label).foregroundStyle(.secondary)
             TextField(prompt, text: text)
         }
+    }
+
+    private func appendPendingURLs(_ urls: [String]) {
+        let existing = Set(DownloadURLNormalizer.extractMany(from: input))
+        let additions = urls.filter { !existing.contains($0) }
+        guard !additions.isEmpty else { return }
+        if !input.isEmpty, !input.hasSuffix("\n") {
+            input.append("\n")
+        }
+        input.append(additions.joined(separator: "\n"))
+        inputFocused = true
     }
 
     private func chooseDirectory() {

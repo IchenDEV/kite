@@ -157,12 +157,13 @@ final class DownloadStore {
         if settingsStore.values.features.updates.automaticallyChecks {
             Task { await self.checkForUpdates() }
         }
-        configureClipboardMonitor()
 
         do {
             let started = try await engine.start(settings: settingsStore.runtimeValues)
             client = started.client
             engineState = .running(version: started.version)
+            configureClipboardMonitor()
+            recognizeClipboardOnActivation()
             await configureExtensionServer(client: started.client, engineVersion: started.version)
             Task { await self.synchronizeTrackers(client: started.client) }
             Task { await self.configurePortMappings() }
@@ -604,6 +605,12 @@ final class DownloadStore {
         guard let value = NSPasteboard.general.string(forType: .string) else { return }
         presentLinks(DownloadURLNormalizer.extractMany(from: value))
         clipboardMonitor.suppressCurrentContents()
+    }
+
+    func recognizeClipboardOnActivation() {
+        guard client != nil,
+              settingsStore.values.features.capture.monitorClipboard else { return }
+        handleClipboardURLs(clipboardMonitor.consumeCurrentContents())
     }
 
     func acceptDroppedURLs(_ urls: [URL]) {
@@ -1086,20 +1093,23 @@ final class DownloadStore {
         clipboardMonitor.stop()
         guard settingsStore.values.features.capture.monitorClipboard else { return }
         clipboardMonitor.start { [weak self] urls in
-            guard let self else { return }
-            let ignoredHosts = Set(self.settingsStore.values.features.capture.ignoredHosts.map { $0.lowercased() })
-            let accepted = urls.filter { value in
-                guard let host = URL(string: value)?.host?.lowercased() else { return true }
-                return !ignoredHosts.contains { host == $0 || host.hasSuffix(".\($0)") }
-            }
-            guard !accepted.isEmpty else { return }
-            if self.settingsStore.values.features.capture.confirmClipboardLinks {
-                self.presentLinks(accepted)
-            } else {
-                var options = AddTaskOptions(directory: self.settingsStore.values.downloadDirectory)
-                options.userAgent = self.settingsStore.values.userAgent
-                Task { await self.addURLs(accepted, options: options) }
-            }
+            self?.handleClipboardURLs(urls)
+        }
+    }
+
+    private func handleClipboardURLs(_ urls: [String]) {
+        let ignoredHosts = Set(settingsStore.values.features.capture.ignoredHosts.map { $0.lowercased() })
+        let accepted = urls.filter { value in
+            guard let host = URL(string: value)?.host?.lowercased() else { return true }
+            return !ignoredHosts.contains { host == $0 || host.hasSuffix(".\($0)") }
+        }
+        guard !accepted.isEmpty else { return }
+        if settingsStore.values.features.capture.confirmClipboardLinks {
+            presentLinks(accepted)
+        } else {
+            var options = AddTaskOptions(directory: settingsStore.values.downloadDirectory)
+            options.userAgent = settingsStore.values.userAgent
+            Task { await addURLs(accepted, options: options) }
         }
     }
 
