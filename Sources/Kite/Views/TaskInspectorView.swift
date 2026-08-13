@@ -56,6 +56,9 @@ struct TaskInspectorView: View {
                 )
             }
         }
+        .onChange(of: store.selectedTask?.gid) { _, _ in
+            tab = .overview
+        }
     }
 
     private func availableTabs(for task: DownloadTask) -> [InspectorTab] {
@@ -153,7 +156,6 @@ private struct TaskFilesView: View {
                 Divider()
                 HStack {
                     Button("All") { selectedIndices = Set(task.files.map(\.id)) }
-                    Button("None") { selectedIndices.removeAll() }
                     Spacer()
                     Button("Apply") {
                         Task { await store.setSelectedFiles(selectedIndices, task: task) }

@@ -305,18 +305,18 @@ actor ExtensionRouter {
             case "engine/status":
                 result = ["running": true, "name": "aria2-next", "version": engineVersion]
             case "url/probe":
-                guard let value = params["url"] as? String, let url = URL(string: value) else {
+                guard let value = params["url"] as? String else {
                     throw Aria2RPCError(code: -32602, message: "A valid url parameter is required")
                 }
-                var probe = URLRequest(url: url); probe.httpMethod = "HEAD"; probe.timeoutInterval = 10
-                let (_, response) = try await URLSession.shared.data(for: probe)
-                let http = response as? HTTPURLResponse
+                let preview = try await DownloadPreviewService(timeout: 10).preview(value)
                 result = [
-                    "url": url.absoluteString,
-                    "reachable": http.map { (200 ... 399).contains($0.statusCode) } ?? true,
-                    "status": http?.statusCode ?? 0,
-                    "contentType": response.mimeType ?? "",
-                    "contentLength": response.expectedContentLength,
+                    "url": preview.finalURL?.absoluteString ?? preview.originalValue,
+                    "reachable": preview.isReachable,
+                    "status": preview.statusCode ?? 0,
+                    "contentType": preview.mimeType ?? "",
+                    "contentLength": preview.contentLength ?? -1,
+                    "filename": preview.suggestedFilename ?? "",
+                    "protocol": preview.protocolKind.rawValue,
                 ]
             case "url/resolve":
                 guard let value = params["url"] as? String, let normalized = DownloadURLNormalizer.normalize(value) else {

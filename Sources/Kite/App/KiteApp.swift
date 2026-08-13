@@ -79,7 +79,7 @@ struct KiteApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("New Download…") { downloadStore.showingAddTask = true }
                     .keyboardShortcut("n", modifiers: .command)
-                Button("Open Torrent…") { openTorrent() }
+                Button("Open Torrent or Metalink…") { openContainer() }
                     .keyboardShortcut("o", modifiers: .command)
                 Button("Create Torrent…") { downloadStore.showingTorrentCreator = true }
                 Button("Add Links from Clipboard") { downloadStore.pasteLinksFromClipboard() }
@@ -110,7 +110,7 @@ struct KiteApp: App {
                 }
                 .disabled(downloadStore.selectedTasks.allSatisfy { $0.status != .waiting && $0.status != .paused })
 
-                Button("Remove") { Task { await downloadStore.removeSelection() } }
+                Button("Remove…") { Task { await downloadStore.confirmRemovalOfSelection() } }
                     .keyboardShortcut(.delete, modifiers: .command)
                     .disabled(downloadStore.selectedTaskIDs.isEmpty)
 
@@ -157,15 +157,17 @@ struct KiteApp: App {
         .menuBarExtraStyle(.menu)
     }
 
-    private func openTorrent() {
+    private func openContainer() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.init(filenameExtension: "torrent")!]
-        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = [
+            .init(filenameExtension: "torrent")!,
+            .init(filenameExtension: "metalink")!,
+            .init(filenameExtension: "meta4")!,
+        ]
+        panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        guard panel.runModal() == .OK else { return }
-        for url in panel.urls {
-            Task { await downloadStore.addTorrent(at: url) }
-        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        downloadStore.presentContainer(url)
     }
 
     private func menuBarAccessibilityLabel(for summary: ActiveDownloadSummary) -> String {

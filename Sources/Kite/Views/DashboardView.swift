@@ -38,25 +38,39 @@ struct DashboardView: View {
                     .accessibilityLabel("Transfer speed over the last two minutes")
                 }
 
-                if !store.displayedActiveTasks.isEmpty {
+                if !visibleActiveTasks.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Active Downloads")
                             .font(.headline)
-                        ForEach(store.displayedActiveTasks.prefix(6)) { task in
+                        ForEach(visibleActiveTasks.prefix(6)) { task in
                             DashboardTaskLine(task: task)
                         }
                     }
                 } else {
                     ContentUnavailableView(
-                        "Bandwidth Is Quiet",
-                        systemImage: "waveform.path",
-                        description: Text("Start a download to see live transfer activity.")
+                        store.searchText.isEmpty ? "Bandwidth Is Quiet" : "No Matching Downloads",
+                        systemImage: store.searchText.isEmpty ? "waveform.path" : "magnifyingglass",
+                        description: Text(
+                            store.searchText.isEmpty
+                                ? "Start a download to see live transfer activity."
+                                : "Try a different name, label, or file path."
+                        )
                     )
                     .frame(maxWidth: .infinity, minHeight: 160)
                 }
             }
             .padding(24)
             .frame(maxWidth: 980, alignment: .leading)
+        }
+    }
+
+    private var visibleActiveTasks: [DownloadTask] {
+        guard !store.searchText.isEmpty else { return store.displayedActiveTasks }
+        return store.displayedActiveTasks.filter { task in
+            task.name.localizedStandardContains(store.searchText)
+                || task.gid.localizedStandardContains(store.searchText)
+                || store.label(for: task).localizedStandardContains(store.searchText)
+                || task.files.contains { $0.path.localizedStandardContains(store.searchText) }
         }
     }
 }
