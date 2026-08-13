@@ -34,22 +34,36 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .lineLimit(1)
+                } else if settingsStore.hasPendingSave {
+                    HStack(spacing: 7) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Saving changes…")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                } else if settingsStore.requiresEngineRestart {
+                    Label("Saved · Restart required", systemImage: "arrow.clockwise.circle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 } else {
-                    Text("Engine settings take effect after restart.")
+                    Label("Changes save automatically", systemImage: "checkmark.circle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Save and Restart Engine") {
+                Button("Restart Engine") {
                     Task { await downloadStore.restartEngine() }
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(downloadStore.isBusy)
+                .help("Apply transfer and network settings now")
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(.bar)
         }
+        .onDisappear { settingsStore.save() }
         .confirmationDialog(
             "Restore all settings?",
             isPresented: $showingResetConfirmation,
@@ -131,6 +145,7 @@ private struct AutomationSettings: View {
                             .toggleStyle(.button)
                             .buttonBorderShape(.circle)
                             .controlSize(.small)
+                            .accessibilityLabel(weekdayName(weekday))
                     }
                 }
                 Picker("When all tasks finish", selection: $settingsStore.values.features.taskSchedule.completionAction) {
@@ -284,6 +299,10 @@ private struct AutomationSettings: View {
         )
     }
 
+    private func weekdayName(_ weekday: Int) -> String {
+        Calendar.current.weekdaySymbols[weekday % 7]
+    }
+
     private func chooseWatchDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -305,6 +324,8 @@ private struct AccountSettings: View {
     @Bindable var settingsStore: SettingsStore
     @State private var editingProfile: AppSettings.CredentialProfile?
     @State private var creatingProfile = false
+    @State private var profilePendingRemoval: AppSettings.CredentialProfile?
+    @State private var showingRemovalConfirmation = false
 
     var body: some View {
         Form {
@@ -329,7 +350,10 @@ private struct AccountSettings: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Button("Edit") { editingProfile = profile }
-                            Button("Delete", role: .destructive) { remove(profile) }
+                            Button("Delete", role: .destructive) {
+                                profilePendingRemoval = profile
+                                showingRemovalConfirmation = true
+                            }
                         }
                     }
                 }
@@ -350,6 +374,19 @@ private struct AccountSettings: View {
         }
         .sheet(item: $editingProfile) { profile in
             CredentialEditor(profile: profile) { updated, secret in save(updated, secret: secret) }
+        }
+        .confirmationDialog(
+            "Delete saved credential?",
+            isPresented: $showingRemovalConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Credential", role: .destructive) {
+                if let profilePendingRemoval { remove(profilePendingRemoval) }
+                profilePendingRemoval = nil
+            }
+            Button("Cancel", role: .cancel) { profilePendingRemoval = nil }
+        } message: {
+            Text("The profile and its password or cookie will be removed from Kite and the login Keychain.")
         }
     }
 
@@ -514,7 +551,6 @@ private struct DownloadSettings: View {
                 Stepper("Segments per file: \(settingsStore.values.split)", value: $settingsStore.values.split, in: 1 ... 256)
                 Stepper("Connections per server: \(settingsStore.values.maxConnectionsPerServer)", value: $settingsStore.values.maxConnectionsPerServer, in: 1 ... 256)
                 Toggle("Resume partial downloads", isOn: $settingsStore.values.continueDownloads)
-                Toggle("Rename when filename already exists", isOn: $settingsStore.values.autoFileRenaming)
                 Picker("File allocation", selection: $settingsStore.values.fileAllocation) {
                     Text("None").tag("none")
                     Text("Preallocate").tag("prealloc")
@@ -670,8 +706,6 @@ private struct NetworkSettings: View {
                 SecureField("Password", text: $settingsStore.proxyPassword)
                     .disabled(settingsStore.values.proxyMode != .manual)
                 TextField("Bind transfers to network interface", text: $settingsStore.values.features.networkPolicy.bindInterface)
-                Toggle("Do not fall back to a direct connection", isOn: $settingsStore.values.features.networkPolicy.noDirectFallback)
-                    .disabled(settingsStore.values.proxyMode == .none)
             }
 
             Section("Local Integrations") {

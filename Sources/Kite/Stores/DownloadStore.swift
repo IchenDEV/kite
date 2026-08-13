@@ -33,6 +33,7 @@ final class DownloadStore {
     var availableUpdate: AvailableUpdate?
     var updateStatus = "Not checked"
     var pendingAddURLs: [String] = []
+    var pendingContainerURL: URL?
     var metadataByGID: [String: TaskMetadata] = [:]
     var pendingCompletionAction: AppSettings.CompletionAction?
     var completionCountdown = 0
@@ -149,6 +150,11 @@ final class DownloadStore {
         selectedTasks.contains { $0.status == .error || $0.status == .removed }
     }
 
+    var canAddDownloads: Bool {
+        if case .running = engineState { return client != nil }
+        return false
+    }
+
     func start() async {
         guard client == nil else { return }
         engineState = .starting
@@ -163,9 +169,11 @@ final class DownloadStore {
         }
 
         do {
-            let started = try await engine.start(settings: settingsStore.runtimeValues)
+            let runtimeSettings = settingsStore.runtimeValues
+            let started = try await engine.start(settings: runtimeSettings)
             client = started.client
             engineState = .running(version: started.version)
+            settingsStore.markEngineConfigurationApplied(runtimeSettings)
             configureClipboardMonitor()
             recognizeClipboardOnActivation()
             await configureExtensionServer(client: started.client, engineVersion: started.version)
@@ -204,13 +212,25 @@ final class DownloadStore {
     }
 
     func restartEngine() async {
+        guard !isBusy else { return }
         isBusy = true
         pollingTask?.cancel()
+        pollingTask = nil
+        automationTask?.cancel()
+        automationTask = nil
         settingsStore.save()
+        await extensionServer.stop()
+        await remoteControlServer.stop()
+        await portMappingService.removeMappings()
+        extensionAPIPort = nil
+        remoteAPIPort = nil
+        portMappingState = .disabled
         do {
-            let restarted = try await engine.restart(settings: settingsStore.runtimeValues, client: client)
+            let runtimeSettings = settingsStore.runtimeValues
+            let restarted = try await engine.restart(settings: runtimeSettings, client: client)
             client = restarted.client
             engineState = .running(version: restarted.version)
+            settingsStore.markEngineConfigurationApplied(runtimeSettings)
             await configureExtensionServer(client: restarted.client, engineVersion: restarted.version)
             Task { await self.synchronizeTrackers(client: restarted.client) }
             Task { await self.configurePortMappings() }
@@ -222,6 +242,7 @@ final class DownloadStore {
         } catch {
             engineState = .failed(error.localizedDescription)
             lastError = error.localizedDescription
+            client = nil
         }
         isBusy = false
     }
@@ -268,7 +289,10 @@ final class DownloadStore {
     }
 
     func addURLs(_ rawURLs: [String], options: AddTaskOptions) async {
-        guard let client else { return }
+        guard let client else {
+            lastError = "The download engine is not ready yet. Try again after it finishes starting."
+            return
+        }
         isBusy = true
         do {
             var expandedURLs: [String] = []
@@ -321,8 +345,35 @@ final class DownloadStore {
         isBusy = false
     }
 
+    func previewHeaders(for options: AddTaskOptions, source: String) -> [String: String] {
+        var headers: [String: String] = [:]
+        let userAgent = options.userAgent.isEmpty ? settingsStore.values.userAgent : options.userAgent
+        if !userAgent.isEmpty { headers["User-Agent"] = userAgent }
+        if !options.referer.isEmpty { headers["Referer"] = options.referer }
+        if !options.cookie.isEmpty { headers["Cookie"] = options.cookie }
+        for line in options.headers.split(whereSeparator: \.isNewline) {
+            guard let separator = line.firstIndex(of: ":") else { continue }
+            let name = line[..<separator].trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = line[line.index(after: separator)...].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !name.isEmpty { headers[name] = value }
+        }
+        if let profile = resolvedCredentialProfile(for: options, source: source),
+           let secret = try? KeychainService.credential(id: profile.id) {
+            if profile.sendsCookie, !secret.cookie.isEmpty {
+                headers["Cookie"] = secret.cookie
+            } else if !profile.username.isEmpty || !secret.password.isEmpty {
+                let credentials = Data("\(profile.username):\(secret.password)".utf8).base64EncodedString()
+                headers["Authorization"] = "Basic \(credentials)"
+            }
+        }
+        return headers
+    }
+
     func addTorrent(at url: URL, options: AddTaskOptions? = nil) async {
-        guard let client else { return }
+        guard let client else {
+            lastError = "The download engine is not ready yet. Try again after it finishes starting."
+            return
+        }
         isBusy = true
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
@@ -358,21 +409,19 @@ final class DownloadStore {
     }
 
     func handleExternalURL(_ url: URL) async {
-        if url.isFileURL, url.pathExtension.lowercased() == "torrent" {
-            await addTorrent(at: url)
+        if url.isFileURL,
+           ["torrent", "metalink", "meta4"].contains(url.pathExtension.lowercased()) {
+            presentContainer(url)
             return
         }
-        if url.isFileURL, ["metalink", "meta4"].contains(url.pathExtension.lowercased()) {
-            await addMetalink(at: url)
-            return
-        }
-        var options = AddTaskOptions(directory: settingsStore.values.downloadDirectory)
-        options.userAgent = settingsStore.values.userAgent
-        await addURLs([url.absoluteString], options: options)
+        presentLinks([url.absoluteString])
     }
 
     func addMetalink(at url: URL, options: AddTaskOptions? = nil) async {
-        guard let client else { return }
+        guard let client else {
+            lastError = "The download engine is not ready yet. Try again after it finishes starting."
+            return
+        }
         isBusy = true
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
@@ -474,6 +523,25 @@ final class DownloadStore {
         await removeSelection(deleteFiles: deleteFiles)
     }
 
+    func confirmRemovalOfSelection() async {
+        let tasks = selectedTasks
+        guard !tasks.isEmpty else { return }
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = tasks.count == 1 ? "Remove this download?" : "Remove \(tasks.count) downloads?"
+        alert.informativeText = "The selected tasks will be removed from Kite. Files already on disk will be kept."
+        alert.addButton(withTitle: "Remove")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        await removeSelection()
+    }
+
+    func selectionDidChangeSection() {
+        selectedTaskIDs.removeAll()
+        selectedHistoryIDs.removeAll()
+        showingInspector = false
+    }
+
     func retrySelection() async {
         for task in selectedTasks where isMediaTask(task.gid) && task.status == .error {
             startMediaDownload(gid: task.gid)
@@ -554,6 +622,9 @@ final class DownloadStore {
         var options = AddTaskOptions(directory: record.directory)
         if case let .string(filename)? = record.retryOptions["out"] { options.filename = filename }
         if case let .string(referer)? = record.retryOptions["referer"] { options.referer = referer }
+        if case let .string(selection)? = record.retryOptions["select-file"] {
+            options.selectedFileIndices = Set(selection.split(separator: ",").compactMap { Int($0) })
+        }
         options.label = record.label
         if let sourceFilePath = record.sourceFilePath, !sourceFilePath.isEmpty {
             let url = URL(fileURLWithPath: sourceFilePath)
@@ -605,6 +676,14 @@ final class DownloadStore {
         showingAddTask = true
     }
 
+    func presentContainer(_ url: URL) {
+        guard url.isFileURL,
+              ["torrent", "metalink", "meta4"].contains(url.pathExtension.lowercased()) else { return }
+        pendingAddURLs = []
+        pendingContainerURL = url
+        showingAddTask = true
+    }
+
     func pasteLinksFromClipboard() {
         guard let value = NSPasteboard.general.string(forType: .string) else { return }
         presentLinks(DownloadURLNormalizer.extractMany(from: value))
@@ -617,19 +696,31 @@ final class DownloadStore {
         handleClipboardURLs(clipboardMonitor.consumeCurrentContents())
     }
 
-    func acceptDroppedURLs(_ urls: [URL]) {
+    @discardableResult
+    func acceptDroppedURLs(_ urls: [URL]) -> Bool {
         let fileURLs = urls.filter(\.isFileURL)
         let remoteURLs = urls.filter { !$0.isFileURL }.map(\.absoluteString)
-        if !remoteURLs.isEmpty { presentLinks(remoteURLs) }
-        for url in fileURLs {
-            Task {
-                switch url.pathExtension.lowercased() {
-                case "torrent": await addTorrent(at: url)
-                case "metalink", "meta4": await addMetalink(at: url)
-                default: presentLinks([url.absoluteString])
-                }
-            }
+        let containers = fileURLs.filter {
+            ["torrent", "metalink", "meta4"].contains($0.pathExtension.lowercased())
         }
+        let unsupportedFiles = fileURLs.filter { !containers.contains($0) }
+
+        guard unsupportedFiles.isEmpty else {
+            lastError = "Drop download links or one Torrent/Metalink file. Other local files are not supported."
+            return false
+        }
+        guard containers.count <= 1, containers.isEmpty || remoteURLs.isEmpty else {
+            lastError = "Kite previews one Torrent or Metalink at a time. Drop it separately from download links."
+            return false
+        }
+        if let container = containers.first {
+            presentContainer(container)
+            return true
+        }
+        let normalized = remoteURLs.compactMap(DownloadURLNormalizer.normalize)
+        guard !normalized.isEmpty else { return false }
+        presentLinks(normalized)
+        return true
     }
 
     func showInFinder(_ record: HistoryRecord) {

@@ -267,6 +267,7 @@ struct AddTaskOptions: Sendable {
     var headers = ""
     var checksum = ""
     var proxy = ""
+    var selectedFileIndices: Set<Int>?
     var paused = false
     var credentialProfileID: UUID?
     var label = ""
@@ -292,6 +293,9 @@ struct AddTaskOptions: Sendable {
         }
         if !checksum.isEmpty { result["checksum"] = .string(checksum) }
         if !proxy.isEmpty { result["all-proxy"] = .string(proxy) }
+        if let selectedFileIndices, !selectedFileIndices.isEmpty {
+            result["select-file"] = .string(selectedFileIndices.sorted().map(String.init).joined(separator: ","))
+        }
         if paused { result["pause"] = .string("true") }
         return result
     }

@@ -76,7 +76,7 @@ struct ContentView: View {
             }
 
             ToolbarItem(id: "remove", placement: .primaryAction) {
-                Button(role: .destructive) { Task { await store.removeSelection() } } label: {
+                Button(role: .destructive) { Task { await store.confirmRemovalOfSelection() } } label: {
                     Label("Remove", systemImage: "trash")
                         .symbolRenderingMode(.monochrome)
                         .foregroundStyle(.primary)
@@ -99,11 +99,19 @@ struct ContentView: View {
                 }
                 .help("Toggle Inspector (⌥⌘I)")
             }
+
+            ToolbarItem(id: "settings", placement: .secondaryAction) {
+                SettingsLink {
+                    Label("Settings", systemImage: "gearshape")
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundStyle(.primary)
+                }
+                .help("Settings (⌘,)")
+            }
         }
         .toolbarRole(.editor)
         .dropDestination(for: URL.self) { urls, _ in
             store.acceptDroppedURLs(urls)
-            return !urls.isEmpty
         }
         .dropDestination(for: String.self) { values, _ in
             let urls = values.flatMap(DownloadURLNormalizer.extractMany)

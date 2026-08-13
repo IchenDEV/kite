@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
     @Bindable var store: DownloadStore
+    @State private var showingClearConfirmation = false
 
     var body: some View {
         Group {
@@ -62,13 +63,25 @@ struct HistoryView: View {
                     }
                     .disabled(store.selectedHistoryIDs.isEmpty)
                     Button("Clear History…", role: .destructive) {
-                        Task { await store.clearHistory() }
+                        showingClearConfirmation = true
                     }
                     .disabled(store.history.isEmpty)
                 } label: {
                     Label("History Actions", systemImage: "ellipsis.circle")
                 }
             }
+        }
+        .confirmationDialog(
+            "Clear all download history?",
+            isPresented: $showingClearConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Clear History", role: .destructive) {
+                Task { await store.clearHistory() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Downloaded files and active tasks are not removed.")
         }
     }
 }

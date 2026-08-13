@@ -56,4 +56,19 @@ struct DownloadURLNormalizerTests {
             "magnet:?xt=urn:btih:123",
         ])
     }
+
+    @Test("Analysis reports accepted, duplicate, and rejected lines")
+    func analysis() {
+        let result = DownloadURLNormalizer.analyze("""
+        https://example.com/file.zip
+        not a download
+        https://example.com/file.zip
+        magnet:?dn=missing-hash
+        """)
+
+        #expect(result.accepted == ["https://example.com/file.zip"])
+        #expect(result.duplicateCount == 1)
+        #expect(result.rejected == ["not a download", "magnet:?dn=missing-hash"])
+        #expect(result.inputCount == 4)
+    }
 }

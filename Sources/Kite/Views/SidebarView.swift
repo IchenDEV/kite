@@ -26,6 +26,9 @@ struct SidebarView: View {
                 .padding(.vertical, 10)
         }
         .navigationTitle("Kite")
+        .onChange(of: store.section) { _, _ in
+            store.selectionDidChangeSection()
+        }
     }
 
     private func sidebarRow(_ section: AppSection) -> some View {

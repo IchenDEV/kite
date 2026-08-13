@@ -1,5 +1,13 @@
 import Foundation
 
+struct DownloadURLAnalysis: Equatable, Sendable {
+    let accepted: [String]
+    let duplicateCount: Int
+    let rejected: [String]
+
+    var inputCount: Int { accepted.count + duplicateCount + rejected.count }
+}
+
 enum DownloadURLNormalizer {
     private static let networkSchemes = Set(["http", "https", "ftp"])
 
@@ -18,10 +26,34 @@ enum DownloadURLNormalizer {
     }
 
     static func extractMany(from text: String) -> [String] {
+        analyze(text).accepted
+    }
+
+    static func analyze(_ text: String) -> DownloadURLAnalysis {
         var seen = Set<String>()
-        return text.split(whereSeparator: \.isNewline)
-            .compactMap { normalizedDownloadURL(String($0)) }
-            .filter { seen.insert($0).inserted }
+        var accepted: [String] = []
+        var duplicateCount = 0
+        var rejected: [String] = []
+
+        for line in text.split(whereSeparator: \.isNewline) {
+            let value = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { continue }
+            guard let normalized = normalizedDownloadURL(value) else {
+                rejected.append(value)
+                continue
+            }
+            if seen.insert(normalized).inserted {
+                accepted.append(normalized)
+            } else {
+                duplicateCount += 1
+            }
+        }
+
+        return DownloadURLAnalysis(
+            accepted: accepted,
+            duplicateCount: duplicateCount,
+            rejected: rejected
+        )
     }
 
     private static func normalizedDownloadURL(_ value: String) -> String? {

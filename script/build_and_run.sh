@@ -103,6 +103,16 @@ cat >"$INFO_PLIST" <<PLIST
       <key>LSHandlerRank</key>
       <string>Alternate</string>
     </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Metalink File</string>
+      <key>CFBundleTypeExtensions</key>
+      <array><string>metalink</string><string>meta4</string></array>
+      <key>CFBundleTypeRole</key>
+      <string>Viewer</string>
+      <key>LSHandlerRank</key>
+      <string>Alternate</string>
+    </dict>
   </array>
 </dict>
 </plist>
